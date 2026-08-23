@@ -7,7 +7,7 @@ production Supabase project.
 
 ## Local setup
 
-Requirements: Node.js 20+ and npm.
+Requirements: Node.js 22+ and npm.
 
 ```bash
 npm install
@@ -19,9 +19,27 @@ Configure these browser-safe Vite variables in `.env.local`:
 
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_PUBLISHABLE_KEY`
+- `VITE_AI_BFF_URL` for the customer Next.js server (development defaults to
+  `http://127.0.0.1:3000`)
 
 `VITE_SUPABASE_ANON_KEY` is accepted only for compatibility with an existing
 legacy project. Never put a secret/service-role key in a `VITE_` variable.
+The admin browser never receives the Gemini key. It sends the current Supabase
+access token to the BFF, where the employee is revalidated before any insight
+is read, generated, or reviewed.
+
+## AI risk Briefing
+
+Booking details keep the original observation visible beside cached AI
+summary, text severity, risk tags, actions, and confidence. Employees explicitly
+start or retry generation, can force reanalysis, and can record a
+correct/partially-correct/incorrect verdict with optional corrected tags and
+notes. Feedback is stored alongside the original AI result for later evals.
+
+Today's activity performs one Supabase relationship query for already-cached
+insights. It never starts generation and does not issue one BFF request per
+row. A failed AI request leaves check-in, checkout, and all booking operations
+unchanged.
 
 ## Quality commands
 

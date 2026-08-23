@@ -4,10 +4,11 @@ import { Flag } from "../../ui/Flag";
 import Button from "../../ui/Button";
 import { Link } from "react-router-dom";
 import CheckoutButton from "./CheckoutButton";
+import TodayInsightBadge from "../booking-insights/TodayInsightBadge";
 
 const StyledTodayItem = styled.li`
   display: grid;
-  grid-template-columns: 9rem 2rem 1fr 7rem 9rem;
+  grid-template-columns: 9rem 2rem 1fr 7rem 10rem 9rem;
   gap: 1.2rem;
   align-items: center;
 
@@ -25,7 +26,7 @@ const Guest = styled.div`
 `;
 
 function TodayItem({ activity }) {
-  const { id, status, guests, numNights } = activity;
+  const { id, status, guests, numNights, booking_ai_insights } = activity;
 
   return (
     <StyledTodayItem>
@@ -35,6 +36,7 @@ function TodayItem({ activity }) {
       <Flag src={guests.countryFlag} alt={`Flag of ${guests.country}`} />
       <Guest>{guests.fullName}</Guest>
       <div>{numNights} nights</div>
+      <TodayInsightBadge insight={booking_ai_insights} />
 
       {status === "unconfirmed" && (
         <Button

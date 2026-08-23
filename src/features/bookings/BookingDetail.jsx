@@ -18,6 +18,7 @@ import Modal from "../../ui/Modal";
 import ConfirmDelete from "../../ui/ConfirmDelete";
 import { useDeleteBooking } from "./useDeleteBooking";
 import Empty from "../../ui/Empty";
+import BookingInsightCard from "../booking-insights/BookingInsightCard";
 
 const HeadingGroup = styled.div`
   display: flex;
@@ -56,6 +57,11 @@ function BookingDetail() {
       </Row>
 
       <BookingDataBox booking={booking} />
+
+      <BookingInsightCard
+        bookingId={bookingId}
+        observation={booking.observations}
+      />
 
       <ButtonGroup>
         {status === "unconfirmed" && (
