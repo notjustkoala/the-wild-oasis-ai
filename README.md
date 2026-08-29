@@ -41,6 +41,40 @@ insights. It never starts generation and does not issue one BFF request per
 row. A failed AI request leaves check-in, checkout, and all booking operations
 unchanged.
 
+## Operations Copilot
+
+The floating **Operations Copilot** drawer sends the employee's Supabase access
+token and a natural-language question to the customer application's
+`/api/ai/admin` BFF. Results are rendered as KPI cards, cabin performance bars,
+booking lists, and a tool timeline. The server exposes only five fixed,
+bounded read tools and never sends guest names, contact details, raw
+observations, or complete booking rows to Gemini.
+
+Booking KPIs match the dashboard reporting basis: the range uses `created_at`,
+cancelled bookings remain included, and `totalRevenue` sums `totalPrice` only
+because that field already includes extras. `extrasPrice` is reported
+separately as `extrasRevenue` and is not added again. Each result also exposes
+compact expandable `sourceIds` evidence.
+
+The sole write action drafts an internal booking note. The drawer shows the
+exact booking and note text and requires an explicit employee approval or
+rejection. Rejected drafts are not retried, and the server's idempotent audit
+transaction can update only the staff-only internal note field. Set
+`AI_ADMIN_ORIGIN` on the customer server for a deployed admin origin; local
+development permits the Vite origins described above.
+
+For the approval-chain acceptance check, send one explicit booking command in a
+single turn, for example: `Draft an internal note for booking 123: Follow up on
+payment`. Verify that the drawer shows the exact booking and note, reject once
+to confirm no booking field changes, then repeat and approve to confirm only
+`bookings.internalNote` changes.
+
+Feature 03 is applied to the dedicated Dev Supabase project; the original
+project and database were not modified. The customer worktree's append-only
+`20260825000100_optimize_ai_operations_advisors.sql` migration adds the missing
+foreign-key indexes, normalizes Feature 03 RLS expressions, and preserves the
+constrained approval RPC contract.
+
 ## Quality commands
 
 ```bash

@@ -2,6 +2,7 @@ import { Outlet } from "react-router-dom";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
 import styled from "styled-components";
+import CopilotDrawer from "../features/operations-copilot/CopilotDrawer";
 
 const StyledAppLayout = styled.div`
   display: grid;
@@ -36,6 +37,7 @@ function AppLayout() {
           <Outlet />
         </Container>
       </Main>
+      <CopilotDrawer />
     </StyledAppLayout>
   );
 }
