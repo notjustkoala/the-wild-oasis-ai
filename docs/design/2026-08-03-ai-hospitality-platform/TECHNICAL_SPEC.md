@@ -6,11 +6,19 @@
 
 ------禁止调整，保持原样------
 
+---
+**平台开发状态**: 🚧 分阶段实施
+**本次对齐范围**: ✅ Feature 03「AI 运营 Copilot」已完成
+**对齐检查**: 2026-08-29
+**需求基准**: 经用户确认，以本技术方案与 `feature/03-operations-copilot.md` 为本次收尾基准；当前目录没有独立 DRAFT_SPEC
+**实际实现说明**: Feature 03 与原目标一致；模型默认直连 Gemini，Admin 使用 JSON 聚合响应，隐私输入采用中英文受控语法与 fail-closed 降级，自动化验证采用 Vitest 集成测试加人工 E2E
+---
+
 **基于需求**: 2026-08-02 至 2026-08-03 对话需求与两个现有代码仓库
 
 **Goal:** 将顾客预订网站与酒店运营后台升级为可演示、可评测、可写入前端求职简历的双端 AI 酒店经营平台。
 
-**Architecture:** 以 Next.js 顾客端作为 AI BFF，集中保存模型密钥、身份验证、工具定义和流式响应；顾客端与 Vite 运营后台消费同一套类型化 AI 接口。结构化库存和订单数据通过受控 Supabase 查询工具获取，政策文档才进入 RAG，所有敏感写操作必须经过权限校验和人工确认。
+**Architecture:** 以 Next.js 顾客端作为 AI BFF，集中保存模型密钥、身份验证、工具定义和类型化响应；顾客端使用流式协议，Vite 运营后台的 Feature 03 使用 JSON 聚合响应，BFF 保留流式扩展能力。结构化库存和订单数据通过受控 Supabase 查询工具获取，政策文档才进入 RAG，所有敏感写操作必须经过权限校验和人工确认。
 
 **Tech Stack:** React 18、Next.js App Router、Vite、Supabase、TanStack Query、Vercel AI SDK、TypeScript、Zod、Vitest、Playwright、pgvector
 
@@ -21,7 +29,7 @@
 1. **工程基线与演示数据** - 清理课程痕迹，建立 TypeScript、测试、构建与可复现实验数据基线 → [详见实施步骤](feature/00-engineering-baseline.md)
 2. **AI 选房与预订顾问** - 用实时库存工具、流式推荐卡片和预订预填完成顾客端核心 AI 闭环 → [详见实施步骤](feature/01-ai-concierge.md)
 3. **订单风险识别与入住 Briefing** - 将自由文本需求转为可审核的风险标签、摘要和员工待办 → [详见实施步骤](feature/02-booking-risk-briefing.md)
-4. **AI 运营 Copilot** - 用自然语言查询经营数据并渲染 KPI、图表、订单列表和受控操作 → [详见实施步骤](feature/03-operations-copilot.md)
+4. **AI 运营 Copilot** - ✅ 已完成并于 2026-08-29 对齐；用受控自然语言查询经营数据并渲染 KPI、图表、订单列表和审批操作 → [详见实施步骤](feature/03-operations-copilot.md)
 5. **政策知识库 RAG** - 为顾客政策与员工 SOP 提供带引用、带权限的知识检索 → [详见实施步骤](feature/04-policy-rag.md)
 6. **评测、可观测与安全加固** - 建立固定 Eval、权限测试、调用追踪、成本与延迟指标 → [详见实施步骤](feature/05-evaluation-observability.md)
 7. **作品集与简历交付** - 完成部署、案例文档、演示脚本和基于真实指标的简历表述 → [详见实施步骤](feature/06-portfolio-delivery.md)
@@ -69,7 +77,7 @@ sequenceDiagram
 - **前端框架**: 顾客端 Next.js App Router；运营端 React + Vite
 - **状态管理**: 顾客端 AI SDK UI 状态与现有 ReservationContext；运营端 TanStack Query
 - **UI组件库**: 延续 Tailwind CSS 与 styled-components，AI 组件采用业务定制 Generative UI
-- **AI 服务**: Vercel AI SDK + AI Gateway；实施时查询并固定当前可用模型 ID
+- **AI 服务**: Vercel AI SDK；默认通过 Gemini Developer API 直连固定模型，AI Gateway 作为可选的多供应商路由
 - **数据与权限**: Supabase Postgres、Auth、RLS、pgvector
 - **验证**: Vitest、React Testing Library、Playwright、AI SDK Mock Provider
 
@@ -78,16 +86,15 @@ sequenceDiagram
 21-the-wild-oasis-website/
 ├── app/api/ai/                 # 顾客与员工 AI Route Handlers
 ├── app/_ai/agents/             # Agent 定义
-├── app/_ai/tools/              # 受控业务工具
-├── app/_ai/schemas/            # Zod 输入输出契约
+├── app/_ai/                    # Agent、受控业务工具、认证、脱敏和 Zod 契约
 ├── app/_components/ai/         # 生成式 UI 组件
 ├── supabase/migrations/        # 两端共享的数据结构变更
 └── tests/ai/                   # 工具与 Eval 测试
 
 17-the-wild-oasis/
-├── src/features/ai-copilot/    # 运营 Copilot UI
+├── src/features/operations-copilot/ # 运营 Copilot TSX UI
 ├── src/features/booking-insights/
-├── src/services/apiAi.js       # 携带 Supabase Token 的流式客户端
+├── src/services/apiOperationsCopilot.ts # 携带 Supabase Token 的 JSON 聚合客户端
 └── tests/                      # 运营端组件与流程测试
 ```
 
@@ -147,9 +154,9 @@ sequenceDiagram
 **详细实施**: [详见 02-booking-risk-briefing.md](feature/02-booking-risk-briefing.md)
 
 ### AI 运营 Copilot
-**技术方案**: 先交付只读经营查询，再加入单一、低风险且必须审批的写工具。工具使用固定查询和明确返回类型，结果渲染成现有仪表盘风格的 KPI、图表和订单列表。
-**主要组件**: CopilotDrawer、KpiResult、ChartResult、BookingResult、ApprovalCard
-**关键文件**: 后台 `src/features/ai-copilot/`，顾客端 `app/api/ai/admin/`
+**技术方案**: 先交付只读经营查询，再加入单一、低风险且必须审批的写工具。工具使用固定查询和明确返回类型，结果渲染成现有仪表盘风格的 KPI、图表和订单列表。员工输入先经过本地中英文运营语法、PII 脱敏和 fail-closed 校验；无法证明安全的自由文本不会发送给模型。聚合与风险扫描采用稳定分页、2,000 行硬上限和明确的 Partial Result 提示。
+**主要组件**: CopilotDrawer、KpiResult、ChartResult、BookingResult、ToolTimeline，以及 CopilotDrawer 内联审批区域
+**关键文件**: 后台 `src/features/operations-copilot/`、`src/services/apiOperationsCopilot.ts`，顾客端 `app/api/ai/admin/` 与 `app/_ai/operations-*.ts`
 
 **时序图**:
 ```mermaid
@@ -157,7 +164,7 @@ sequenceDiagram
     S->>C: 询问未来七天重点订单
     C->>A: 发送 Supabase Access Token 与问题
     A->>T: 校验角色并查询经营数据
-    T-->>C: 流式返回 KPI 图表与订单
+    T-->>C: 返回类型化工具步骤、KPI、图表与订单
     C-->>S: 展示证据和可导航结果
 ```
 
