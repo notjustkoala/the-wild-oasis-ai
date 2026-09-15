@@ -1,5 +1,9 @@
 # Feature 04：政策知识库 RAG 技术方案
 
+**2026-09-15 收尾复核**：实现和验收修复已做规格/质量审查；网站 441 测试与员工端 70 测试及两端构建通过。开发库已启用 pgvector 0.8.2，实际 migration 为 `20260910084108_policy_rag.sql`。正式关闭仍等待真实登录角色和模型答复回归授权，详见网站仓库 `tests/ai/policy-rag-closeout.md`。
+
+**实际实现补充**：当前问题绑定到检索输入并限制单次工具调用；员工费用豁免在同一 RLS client 内增加固定 SOP 检索，缺失审批证据则拒答；“只解释流程”检索后禁用工具；两端使用共享 `policy-answer-instructions.ts` 保留严格数字边界、建议语气和来源未知项。未改变政策事实或扩展 AI 订单写入权限。
+
 ------禁止调整，保持原样------
 > **For Claude:** REQUIRED SUB-SKILL: Use spec-subagent-driven-development to implement this plan task-by-task.
 

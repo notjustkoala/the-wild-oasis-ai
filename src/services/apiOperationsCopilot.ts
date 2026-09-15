@@ -20,6 +20,32 @@ export type OperationsBookingSummary = {
   sourceIds: string[];
 };
 
+export type PolicyCitation = {
+  documentId: string;
+  title: string;
+  section: string;
+  version: number;
+  effectiveDate: string;
+  excerpt: string;
+  scope: "public" | "staff";
+};
+
+export type OperationsPolicySearchOutput =
+  | {
+      kind: "policy-search";
+      status: "grounded";
+      answerContext: string;
+      citations: [PolicyCitation, ...PolicyCitation[]];
+      truncated: boolean;
+    }
+  | {
+      kind: "policy-search";
+      status: "insufficient-evidence";
+      answerContext: "";
+      citations: [];
+      truncated: false;
+    };
+
 export type OperationsToolOutput =
   | (OperationsToolOutputBase & { kind: "arrivals"; arrivals: OperationsBookingSummary[] })
   | (OperationsToolOutputBase & {
@@ -57,7 +83,8 @@ export type OperationsToolOutput =
       note: string;
       status: "pending";
       truncated: false;
-    });
+    })
+  | OperationsPolicySearchOutput;
 
 export type OperationsStep = {
   stepNumber: number;
@@ -95,6 +122,17 @@ function isFiniteNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
 }
 
+function hasOnlyKeys(value: Record<string, unknown>, keys: readonly string[]) {
+  const allowed = new Set(keys);
+  return Object.keys(value).every((key) => allowed.has(key));
+}
+
+function isIsoDate(value: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(`${value}T00:00:00.000Z`);
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+}
+
 function isBookingSummary(value: unknown): value is OperationsBookingSummary {
   return isRecord(value)
     && isPositiveSafeInteger(value.bookingId)
@@ -110,6 +148,48 @@ function isBookingSummary(value: unknown): value is OperationsBookingSummary {
     && isStringArray(value.sourceIds);
 }
 
+function isPolicyCitation(value: unknown): value is PolicyCitation {
+  return isRecord(value)
+    && hasOnlyKeys(value, ["documentId", "title", "section", "version", "effectiveDate", "excerpt", "scope"])
+    && typeof value.documentId === "string"
+    && value.documentId.length > 0
+    && value.documentId.length <= 120
+    && typeof value.title === "string"
+    && value.title.length > 0
+    && value.title.length <= 160
+    && typeof value.section === "string"
+    && value.section.length > 0
+    && value.section.length <= 200
+    && isPositiveSafeInteger(value.version)
+    && typeof value.effectiveDate === "string"
+    && isIsoDate(value.effectiveDate)
+    && typeof value.excerpt === "string"
+    && value.excerpt.length > 0
+    && value.excerpt.length <= 420
+    && (value.scope === "public" || value.scope === "staff");
+}
+
+function isPolicySearchOutput(value: Record<string, unknown>): value is OperationsPolicySearchOutput {
+  if (
+    !hasOnlyKeys(value, ["kind", "status", "answerContext", "citations", "truncated"])
+    ||
+    value.kind !== "policy-search"
+    || typeof value.status !== "string"
+    || typeof value.answerContext !== "string"
+    || !Array.isArray(value.citations)
+    || typeof value.truncated !== "boolean"
+  ) return false;
+  if (value.status === "insufficient-evidence") {
+    return value.answerContext === "" && value.citations.length === 0 && value.truncated === false;
+  }
+  return value.status === "grounded"
+    && value.answerContext.length > 0
+    && value.answerContext.length <= 2_400
+    && value.citations.length > 0
+    && value.citations.length <= 5
+    && value.citations.every(isPolicyCitation);
+}
+
 function hasToolOutputBase(value: Record<string, unknown>) {
   return isStringArray(value.facts)
     && isStringArray(value.sourceIds)
@@ -117,7 +197,9 @@ function hasToolOutputBase(value: Record<string, unknown>) {
 }
 
 function isOperationsToolOutput(value: unknown): value is OperationsToolOutput {
-  if (!isRecord(value) || typeof value.kind !== "string" || !hasToolOutputBase(value)) return false;
+  if (!isRecord(value) || typeof value.kind !== "string") return false;
+  if (value.kind === "policy-search") return isPolicySearchOutput(value);
+  if (!hasToolOutputBase(value)) return false;
 
   if (value.kind === "arrivals") return Array.isArray(value.arrivals) && value.arrivals.every(isBookingSummary);
   if (value.kind === "booking-risks") return Array.isArray(value.risks) && value.risks.every(isBookingSummary);

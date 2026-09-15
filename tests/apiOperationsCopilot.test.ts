@@ -1,14 +1,14 @@
-const getSession = vi.hoisted(() => vi.fn());
-
-vi.mock("../src/services/supabase", () => ({
-  default: { auth: { getSession } },
-}));
-
 import {
   askOperationsCopilot,
   decideOperationsApproval,
   parseOperationsResponse,
 } from "../src/services/apiOperationsCopilot";
+
+const getSession = vi.hoisted(() => vi.fn());
+
+vi.mock("../src/services/supabase", () => ({
+  default: { auth: { getSession } },
+}));
 
 function bookingSummary() {
   return {
@@ -94,6 +94,17 @@ function cabinOutput(overrides: Record<string, unknown> = {}) {
   };
 }
 
+function policyOutput(overrides: Record<string, unknown> = {}) {
+  return {
+    kind: "policy-search",
+    status: "grounded",
+    answerContext: "Trusted context",
+    citations: [{ documentId: "exception-handling-sop", title: "Exception handling SOP", section: "Escalation", version: 1, effectiveDate: "2026-08-30", excerpt: "Escalate for approval.", scope: "staff" }],
+    truncated: false,
+    ...overrides,
+  };
+}
+
 describe("operations BFF response validation", () => {
   beforeEach(() => {
     getSession.mockReset();
@@ -109,6 +120,22 @@ describe("operations BFF response validation", () => {
 
   it("accepts a structurally valid discriminated tool result", () => {
     expect(parseOperationsResponse(validResponse())).toEqual(validResponse());
+  });
+
+  it("accepts valid grounded and insufficient policy-search outputs", () => {
+    expect(parseOperationsResponse(responseWithOutput(policyOutput()))).not.toBeNull();
+    expect(parseOperationsResponse(responseWithOutput({ kind: "policy-search", status: "insufficient-evidence", answerContext: "", citations: [], truncated: false }))).not.toBeNull();
+  });
+
+  it.each([
+    ["empty grounded citations", policyOutput({ citations: [] })],
+    ["staff source path leak", policyOutput({ citations: [{ ...policyOutput().citations[0], sourcePath: "content/policies/staff/private.md" }] })],
+    ["invalid scope", policyOutput({ citations: [{ ...policyOutput().citations[0], scope: "admin" }] })],
+    ["invalid version", policyOutput({ citations: [{ ...policyOutput().citations[0], version: "1" }] })],
+    ["invalid date", policyOutput({ citations: [{ ...policyOutput().citations[0], effectiveDate: "2026-02-31" }] })],
+    ["context on insufficient result", { kind: "policy-search", status: "insufficient-evidence", answerContext: "Guess", citations: [], truncated: false }],
+  ])("rejects malformed policy output: %s", (_label, output) => {
+    expect(parseOperationsResponse(responseWithOutput(output))).toBeNull();
   });
 
   it.each([

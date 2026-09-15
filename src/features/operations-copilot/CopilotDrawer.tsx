@@ -11,6 +11,7 @@ import {
 import BookingResult from "./BookingResult";
 import ChartResult from "./ChartResult";
 import KpiResult from "./KpiResult";
+import PolicyCitations from "./PolicyCitations";
 import ToolTimeline from "./ToolTimeline";
 
 const Launcher = styled.button`
@@ -50,7 +51,7 @@ function outputs(result: OperationsResponse | null): OperationsToolOutput[] {
 
 function getFocusableElements(container: HTMLElement) {
   return Array.from(container.querySelectorAll<HTMLElement>(
-    'button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])'
+    'button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), a[href], summary, [tabindex]:not([tabindex="-1"])'
   )).filter((element) => element.getAttribute("aria-hidden") !== "true");
 }
 
@@ -162,6 +163,9 @@ export default function CopilotDrawer() {
             if (output.kind === "cabin-performance") return <ChartResult key={`${output.kind}-${index}`} output={output} />;
             if (output.kind === "arrivals" || output.kind === "booking-risks" || output.kind === "booking-details") {
               return <BookingResult key={`${output.kind}-${index}`} output={output} />;
+            }
+            if (output.kind === "policy-search") {
+              return <PolicyCitations key={`${output.kind}-${index}`} output={output} />;
             }
             return null;
           })}

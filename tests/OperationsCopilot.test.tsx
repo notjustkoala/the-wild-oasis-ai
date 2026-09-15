@@ -1,6 +1,11 @@
 import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, useLocation } from "react-router-dom";
+import CopilotDrawer from "../src/features/operations-copilot/CopilotDrawer";
+import BookingResult from "../src/features/operations-copilot/BookingResult";
+import ChartResult from "../src/features/operations-copilot/ChartResult";
+import KpiResult from "../src/features/operations-copilot/KpiResult";
+import ToolTimeline from "../src/features/operations-copilot/ToolTimeline";
 
 const ask = vi.hoisted(() => vi.fn());
 const decide = vi.hoisted(() => vi.fn());
@@ -13,12 +18,6 @@ vi.mock("../src/services/apiOperationsCopilot", () => ({
 vi.mock("react-hot-toast", () => ({
   default: { success: toastSuccess, error: toastError },
 }));
-
-import CopilotDrawer from "../src/features/operations-copilot/CopilotDrawer";
-import BookingResult from "../src/features/operations-copilot/BookingResult";
-import ChartResult from "../src/features/operations-copilot/ChartResult";
-import KpiResult from "../src/features/operations-copilot/KpiResult";
-import ToolTimeline from "../src/features/operations-copilot/ToolTimeline";
 
 function LocationProbe() {
   return <span data-testid="location"><LocationText /></span>;
@@ -63,6 +62,49 @@ describe("Operations Copilot drawer", () => {
     expect(screen.getByText("Bookings")).toBeVisible();
     expect(screen.getByText("getBookingMetrics completed")).toBeVisible();
     expect(screen.getAllByText("Evidence (1)")[0]).toBeVisible();
+  });
+
+  it("renders public and staff policy citations as accessible disclosures", async () => {
+    ask.mockResolvedValue({
+      text: "Escalate the exception for approval.",
+      steps: [{
+        stepNumber: 0,
+        status: "completed",
+        text: "",
+        toolCalls: [{ toolName: "searchHotelPolicies", input: { question: "refund exception SOP" } }],
+        toolResults: [{
+          toolName: "searchHotelPolicies",
+          output: {
+            kind: "policy-search",
+            status: "grounded",
+            answerContext: "Trusted context",
+            citations: [
+              { documentId: "exception-handling-sop", title: "Exception handling SOP", section: "Administrator escalation", version: 1, effectiveDate: "2026-08-30", excerpt: "Escalate refund exceptions for administrator approval.", scope: "staff" },
+              { documentId: "cancellation-refund", title: "Cancellation and refund policy", section: "Review and processing", version: 1, effectiveDate: "2026-08-30", excerpt: "Refunds return to the original payment method.", scope: "public" },
+            ],
+            truncated: false,
+          },
+        }],
+      }],
+    });
+    const user = userEvent.setup();
+    render(<CopilotDrawer />);
+    await userAction(() => user.click(screen.getByRole("button", { name: /operations copilot/i })));
+    await userAction(() => user.type(screen.getByRole("textbox"), "refund exception SOP"));
+    await userAction(() => user.click(screen.getByRole("button", { name: "Ask Copilot" })));
+    expect(await screen.findByText("Staff SOP")).toBeVisible();
+    expect(screen.getByText("Public policy")).toBeVisible();
+    expect(screen.getByText(/Exception handling SOP · Administrator escalation/)).toBeVisible();
+    const summary = screen.getByText(/Exception handling SOP · Administrator escalation/).closest("summary");
+    summary?.focus();
+    expect(summary).toHaveFocus();
+    const nextSummary = screen.getByText(/Cancellation and refund policy · Review and processing/).closest("summary");
+    await userAction(() => user.tab());
+    expect(nextSummary).toHaveFocus();
+    await userAction(() => user.tab({ shift: true }));
+    expect(summary).toHaveFocus();
+    if (summary) await userAction(() => user.click(summary));
+    expect(screen.getByText(/Escalate refund exceptions/i)).toBeVisible();
   });
 
   it("shows a loading state while the BFF request is pending", async () => {
