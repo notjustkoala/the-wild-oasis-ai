@@ -1,6 +1,6 @@
 # Feature 04：政策知识库 RAG 技术方案
 
-**2026-09-15 收尾复核**：实现和验收修复已做规格/质量审查；网站 441 测试与员工端 70 测试及两端构建通过。开发库已启用 pgvector 0.8.2，实际 migration 为 `20260910084108_policy_rag.sql`。正式关闭仍等待真实登录角色和模型答复回归授权，详见网站仓库 `tests/ai/policy-rag-closeout.md`。
+**2026-09-16 已完成并关闭**：实现和验收修复已做规格/质量审查；网站 441 测试、员工端 70 测试及两端构建通过。开发库已启用 pgvector 0.8.2，实际 migration 为 `20260910084108_policy_rag.sql`。用户授权后的 12 项不同 live 检查已分批通过，覆盖真实角色、增量 Embedding、双端答复和员工 SOP；临时账号残留为 0。详见网站仓库 `tests/ai/policy-rag-closeout.md` 与可追溯 live 证据。
 
 **实际实现补充**：当前问题绑定到检索输入并限制单次工具调用；员工费用豁免在同一 RLS client 内增加固定 SOP 检索，缺失审批证据则拒答；“只解释流程”检索后禁用工具；两端使用共享 `policy-answer-instructions.ts` 保留严格数字边界、建议语气和来源未知项。未改变政策事实或扩展 AI 订单写入权限。
 
@@ -16,7 +16,7 @@
 
 **Architecture:** Markdown 是政策事实源；受控脚本校验、按标题分块并用 Gemini Embedding 2 生成 768 维向量，再增量同步到 Supabase。Postgres 使用全文检索与 pgvector HNSW 的混合召回，`SECURITY INVOKER` RPC 和 RLS 根据 Supabase 身份限定 public/staff 范围；Agent 只消费结构化工具结果，引用由 UI 直接渲染而不是让模型生成。
 
-**Tech Stack:** Next.js 14、React 18、Vercel AI SDK 7、`@ai-sdk/google`、Supabase Postgres、pgvector（Dev 可用默认 0.8.2，尚未启用）、Vitest；后台继续使用 Vite、React、styled-components 与 Supabase Auth。
+**Tech Stack:** Next.js 14、React 18、Vercel AI SDK 7、`@ai-sdk/google`、Supabase Postgres、pgvector（Dev 已启用 0.8.2）、Vitest；后台继续使用 Vite、React、styled-components 与 Supabase Auth。
 
 ---
 
