@@ -202,3 +202,13 @@ Feature06 开始前已经存在的 Feature05 改动属于用户资产；本阶�
 - 用户指定的 Windows Computer Use runtime 返回 unavailable；按技能回退连接 Chrome 时，浏览器客户端因 `node:process` 导入被运行时拒绝，未控制任何网页、未读取浏览器会话或凭据。
 - Supabase 只发现组织 `notjustkoala's Org`（ID 不在本文记录）和四个现有项目；其中没有隔离 Demo Project，且明确不复用 `wild-oasis-dev`。创建新项目前仍需用户选择组织、区域并确认实际费用。Vercel 连接正常但当前 team 下无项目；尚未部署。Netlify 尚未连接。
 - 本批次没有创建 Supabase/Vercel/Netlify 项目，没有执行远端 SQL、上传图片、设置环境变量、创建账号或激活 Cron。
+
+### 2026-09-22 — GitHub 新仓库首次发布完成
+
+- 用户确认旧仓库仅作为历史上游，不接收本轮重开发版本；创建两个公开空仓库：Staff `notjustkoala/the-wild-oasis-ai`、Guest/BFF `notjustkoala/the-wild-oasis-website-ai`。
+- 两个本地仓库均将旧 `origin` 改名保留为 `upstream`，并把对应新仓库设置为 `origin`；没有向旧仓库写入任何 Feature06 提交。
+- Staff 当前本地分支保持 `codex/ai-hospitality-platform`，首次发布到新仓库远端 `main`；远端核验为 `f80c2ac838486d5bdb1cbb13a247accfc359b555`。
+- Guest/BFF 当前本地分支保持 `codex/ai-hospitality-platform`，首次发布到新仓库远端 `main`；远端核验为 `f81d2eb2444684807f6e8178b8d61d030a21c147`。
+- GitHub 默认代理 `127.0.0.1:7890` 仍会 reset；仅对发布命令临时使用 `127.0.0.1:7897`、HTTP/1.1 与 Git OpenSSL 完成连通核验，没有修改用户全局 Git 或系统代理设置。
+- Windows Computer Use 已能定位 Chrome/GitHub 窗口，但因无法以足够置信度验证当前浏览器 URL，被运行时安全机制终止；仓库由用户手动创建，代码通过 Git 发布，未自动操作登录、密码、验证码或浏览器安全设置。
+- 本步骤只完成源码首次发布，尚未创建隔离 Supabase Demo Project，也未执行远端 migration/seed、Vercel/Netlify 部署、生产 smoke、演示账号、Cron 激活或人工录屏验收。
