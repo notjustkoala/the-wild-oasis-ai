@@ -5,6 +5,8 @@ import toast from "react-hot-toast";
 import {
   askOperationsCopilot,
   decideOperationsApproval,
+  OperationsRequestError,
+  type OperationsReceipt,
   type OperationsResponse,
   type OperationsToolOutput,
 } from "../../services/apiOperationsCopilot";
@@ -13,6 +15,8 @@ import ChartResult from "./ChartResult";
 import KpiResult from "./KpiResult";
 import PolicyCitations from "./PolicyCitations";
 import ToolTimeline from "./ToolTimeline";
+import ResponseFeedback from "./ResponseFeedback";
+import { Link } from "react-router-dom";
 
 const Launcher = styled.button`
   position: fixed; right: 2.4rem; bottom: 2.4rem; z-index: 20; border: 0; border-radius: 100px; padding: 1.2rem 1.8rem; color: var(--color-brand-50); background: var(--color-brand-700); box-shadow: var(--shadow-lg); font-weight: 600;
@@ -61,6 +65,8 @@ export default function CopilotDrawer() {
   const [result, setResult] = useState<OperationsResponse | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [receipt, setReceipt] = useState<OperationsReceipt | null>(null);
+  const activeRequest = useRef<AbortController | null>(null);
   const [approvalState, setApprovalState] = useState<string | null>(null);
   const launcherRef = useRef<HTMLButtonElement>(null);
   const drawerRef = useRef<HTMLElement>(null);
@@ -114,12 +120,16 @@ export default function CopilotDrawer() {
     setBusy(true);
     setError(null);
     setResult(null);
+    setReceipt(null);
+    activeRequest.current = new AbortController();
     setApprovalState(null);
     try {
-      setResult(await askOperationsCopilot(input));
+      const answer = await askOperationsCopilot(input, activeRequest.current.signal);
+      setResult(answer); setReceipt(answer.receipt ?? null);
     } catch (requestError) {
       const message = requestError instanceof Error ? requestError.message : "The operations copilot is unavailable.";
       setError(message);
+      if (requestError instanceof OperationsRequestError) setReceipt(requestError.receipt ?? null);
       toast.error(message);
     } finally {
       setBusy(false);
@@ -153,7 +163,10 @@ export default function CopilotDrawer() {
           <Button type="submit" disabled={busy || !input.trim()}>{busy ? "Thinking…" : "Ask Copilot"}</Button>
         </Form>
         {busy ? <p role="status">Loading operational data…</p> : null}
+        {busy ? <Button type="button" $secondary onClick={() => activeRequest.current?.abort()}>Stop response</Button> : null}
         {error ? <p role="alert">{error}</p> : null}
+        {receipt ? <ResponseFeedback key={receipt.traceId} receipt={receipt} /> : null}
+        <Link to="/bookings" onClick={closeDrawer}>Continue with Bookings</Link>
         {!busy && !result && !error ? <p role="status">Ask an operational question to begin.</p> : null}
         {result ? <Result>
           {result.text.trim() ? <p>{result.text}</p> : <p role="status">No operational data was returned.</p>}

@@ -94,7 +94,9 @@ export type OperationsStep = {
   toolResults: Array<{ toolName: string; output?: OperationsToolOutput; error?: string }>;
 };
 
-export type OperationsResponse = { text: string; steps: OperationsStep[] };
+export type OperationsReceipt = { traceId: string; token: string | null };
+export type OperationsResponse = { text: string; steps: OperationsStep[]; receipt?: OperationsReceipt };
+export class OperationsRequestError extends Error { constructor(message: string, readonly receipt?: OperationsReceipt) { super(message); } }
 export type OperationsApprovalDecision = {
   id: string;
   bookingId: number;
@@ -305,23 +307,31 @@ function idempotencyKey() {
   return `copilot-${Date.now()}-${Math.random().toString(36).slice(2)}-key`;
 }
 
-export async function askOperationsCopilot(text: string): Promise<OperationsResponse> {
+export async function askOperationsCopilot(text: string, signal?: AbortSignal): Promise<OperationsResponse> {
   const accessToken = await token();
   const response = await fetch(endpoint("/api/ai/admin"), {
     method: "POST",
+    signal,
     headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json", "Content-Type": "application/json" },
     body: JSON.stringify({ id: "wild-oasis-admin-copilot", trigger: "submit-message", messages: [{ id: `operations-user-${Date.now()}`, role: "user", parts: [{ type: "text", text: text.trim() }] }] }),
   });
   const rawPayload: unknown = await response.json().catch(() => null);
+  const traceId = response.headers?.get("X-AI-Trace-Id");
+  const receipt = traceId && /^[0-9a-f-]{36}$/i.test(traceId) ? { traceId, token: response.headers.get("X-AI-Feedback-Token") } : undefined;
   if (!response.ok) {
     const message = isRecord(rawPayload) && typeof rawPayload.error === "string"
       ? rawPayload.error
       : "The operations copilot is unavailable.";
-    throw new Error(message);
+    throw new OperationsRequestError(message, receipt);
   }
   const payload = parseOperationsResponse(rawPayload);
   if (!payload) throw new Error("The operations copilot returned an invalid response.");
-  return payload;
+  return receipt ? { ...payload, receipt } : payload;
+}
+
+export async function sendOperationsFeedback(receipt: OperationsReceipt, rating: "helpful" | "not-helpful") {
+  const response = await fetch(endpoint("/api/ai/feedback"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ traceId: receipt.traceId, token: receipt.token, rating }) });
+  if (!response.ok) throw new Error("Feedback could not be saved. Please try again.");
 }
 
 export async function decideOperationsApproval(

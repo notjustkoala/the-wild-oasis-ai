@@ -8,6 +8,13 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
+test-results/
+output/
+!output/
+output/*
+!output/playwright/
+output/playwright/*
+!output/playwright/feature05-*.png
 dist
 dist-ssr
 *.local

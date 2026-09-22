@@ -8,8 +8,12 @@
     "build": "vite build",
     "lint": "eslint src --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "test": "vitest run",
+    "test:e2e": "playwright test",
+    "test:e2e:security": "playwright test --grep @security",
     "typecheck": "tsc --noEmit",
     "check": "npm run lint && npm run typecheck && npm run test && npm run build",
+    "docs:check": "node scripts/check-markdown-links.mjs",
+    "smoke:production": "node scripts/smoke-production.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -28,11 +32,12 @@
     "styled-components": "^6.1.19"
   },
   "devDependencies": {
-    "@types/react": "^18.2.15",
-    "@types/react-dom": "^18.2.7",
+    "@playwright/test": "1.58.2",
     "@testing-library/jest-dom": "6.6.3",
     "@testing-library/react": "14.3.1",
     "@testing-library/user-event": "14.5.2",
+    "@types/react": "^18.2.15",
+    "@types/react-dom": "^18.2.7",
     "@vitejs/plugin-react": "^4.0.3",
     "eslint": "^8.57.1",
     "eslint-config-react-app": "^7.0.1",

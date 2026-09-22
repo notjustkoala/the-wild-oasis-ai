@@ -11,9 +11,11 @@ const ask = vi.hoisted(() => vi.fn());
 const decide = vi.hoisted(() => vi.fn());
 const toastSuccess = vi.hoisted(() => vi.fn());
 const toastError = vi.hoisted(() => vi.fn());
-vi.mock("../src/services/apiOperationsCopilot", () => ({
+vi.mock("../src/services/apiOperationsCopilot", async (importOriginal) => ({
+  ...await importOriginal<typeof import("../src/services/apiOperationsCopilot")>(),
   askOperationsCopilot: ask,
   decideOperationsApproval: decide,
+  sendOperationsFeedback: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock("react-hot-toast", () => ({
   default: { success: toastSuccess, error: toastError },
@@ -52,7 +54,7 @@ describe("Operations Copilot drawer", () => {
       }],
     });
     const user = userEvent.setup();
-    render(<CopilotDrawer />);
+    render(<MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}><CopilotDrawer /></MemoryRouter>);
     await userAction(() => user.click(screen.getByRole("button", { name: /operations copilot/i })));
     expect(screen.getByRole("status")).toHaveTextContent(/begin/i);
     await userAction(() => user.type(screen.getByRole("textbox"), "Show this week's metrics"));
@@ -88,7 +90,7 @@ describe("Operations Copilot drawer", () => {
       }],
     });
     const user = userEvent.setup();
-    render(<CopilotDrawer />);
+    render(<MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}><CopilotDrawer /></MemoryRouter>);
     await userAction(() => user.click(screen.getByRole("button", { name: /operations copilot/i })));
     await userAction(() => user.type(screen.getByRole("textbox"), "refund exception SOP"));
     await userAction(() => user.click(screen.getByRole("button", { name: "Ask Copilot" })));
@@ -111,7 +113,7 @@ describe("Operations Copilot drawer", () => {
     let resolveRequest: ((value: unknown) => void) | undefined;
     ask.mockReturnValue(new Promise((resolve) => { resolveRequest = resolve; }));
     const user = userEvent.setup();
-    render(<CopilotDrawer />);
+    render(<MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}><CopilotDrawer /></MemoryRouter>);
     await userAction(() => user.click(screen.getByRole("button", { name: /operations copilot/i })));
     await userAction(() => user.type(screen.getByRole("textbox"), "Show arrivals"));
     await userAction(() => user.click(screen.getByRole("button", { name: "Ask Copilot" })));
@@ -127,7 +129,7 @@ describe("Operations Copilot drawer", () => {
     ask.mockResolvedValue({ text: "Draft ready.", steps: [{ stepNumber: 0, status: "completed", text: "", toolCalls: [{ toolName: "addBookingInternalNote", input: { bookingId: 1, note: "Follow up on payment." } }], toolResults: [{ toolName: "addBookingInternalNote", output: { kind: "internal-note-approval", approvalId: "00000000-0000-0000-0000-000000000001", bookingId: 1, note: "Follow up on payment.", status: "pending", facts: [], sourceIds: ["booking:1"], truncated: false } }] }] });
     decide.mockResolvedValue({ status: "rejected" });
     const user = userEvent.setup();
-    render(<CopilotDrawer />);
+    render(<MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}><CopilotDrawer /></MemoryRouter>);
     await userAction(() => user.click(screen.getByRole("button", { name: /operations copilot/i })));
     await userAction(() => user.type(screen.getByRole("textbox"), "Draft a note for booking 1"));
     await userAction(() => user.click(screen.getByRole("button", { name: "Ask Copilot" })));
@@ -140,7 +142,7 @@ describe("Operations Copilot drawer", () => {
     ask.mockResolvedValue({ text: "Draft ready.", steps: [{ stepNumber: 0, status: "completed", text: "", toolCalls: [], toolResults: [{ toolName: "addBookingInternalNote", output: { kind: "internal-note-approval", approvalId: "00000000-0000-0000-0000-000000000001", bookingId: 1, note: "Follow up on payment.", status: "pending", facts: [], sourceIds: ["booking:1"], truncated: false } }] }] });
     decide.mockRejectedValue(new Error("The approval service returned an invalid response."));
     const user = userEvent.setup();
-    render(<CopilotDrawer />);
+    render(<MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}><CopilotDrawer /></MemoryRouter>);
     await userAction(() => user.click(screen.getByRole("button", { name: /operations copilot/i })));
     await userAction(() => user.type(screen.getByRole("textbox"), "Draft a note for booking 1"));
     await userAction(() => user.click(screen.getByRole("button", { name: "Ask Copilot" })));
@@ -155,7 +157,7 @@ describe("Operations Copilot drawer", () => {
   it("clears an old result when the next request fails", async () => {
     ask.mockResolvedValueOnce({ text: "First answer", steps: [] }).mockRejectedValueOnce(new Error("BFF unavailable"));
     const user = userEvent.setup();
-    render(<CopilotDrawer />);
+    render(<MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}><CopilotDrawer /></MemoryRouter>);
     await userAction(() => user.click(screen.getByRole("button", { name: /operations copilot/i })));
     const input = screen.getByRole("textbox");
     await userAction(() => user.type(input, "First question"));
@@ -171,7 +173,7 @@ describe("Operations Copilot drawer", () => {
 
   it("labels and focuses the question, traps focus, closes on Escape, and restores launcher focus", async () => {
     const user = userEvent.setup();
-    render(<CopilotDrawer />);
+    render(<MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}><CopilotDrawer /></MemoryRouter>);
     const launcher = screen.getByRole("button", { name: /operations copilot/i });
     await userAction(() => user.click(launcher));
 
@@ -181,11 +183,15 @@ describe("Operations Copilot drawer", () => {
 
     close.focus();
     await userAction(() => user.tab({ shift: true }));
+    expect(screen.getByRole("link", { name: "Continue with Bookings" })).toHaveFocus();
+    await userAction(() => user.tab({ shift: true }));
     expect(question).toHaveFocus();
 
     await userAction(() => user.type(question, "Show arrivals"));
     const submit = screen.getByRole("button", { name: "Ask Copilot" });
     submit.focus();
+    await userAction(() => user.tab());
+    expect(screen.getByRole("link", { name: "Continue with Bookings" })).toHaveFocus();
     await userAction(() => user.tab());
     expect(close).toHaveFocus();
 
