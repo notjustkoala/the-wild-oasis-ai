@@ -212,3 +212,11 @@ Feature06 开始前已经存在的 Feature05 改动属于用户资产；本阶�
 - GitHub 默认代理 `127.0.0.1:7890` 仍会 reset；仅对发布命令临时使用 `127.0.0.1:7897`、HTTP/1.1 与 Git OpenSSL 完成连通核验，没有修改用户全局 Git 或系统代理设置。
 - Windows Computer Use 已能定位 Chrome/GitHub 窗口，但因无法以足够置信度验证当前浏览器 URL，被运行时安全机制终止；仓库由用户手动创建，代码通过 Git 发布，未自动操作登录、密码、验证码或浏览器安全设置。
 - 本步骤只完成源码首次发布，尚未创建隔离 Supabase Demo Project，也未执行远端 migration/seed、Vercel/Netlify 部署、生产 smoke、演示账号、Cron 激活或人工录屏验收。
+
+### 2026-09-22 — 隔离 Supabase Demo Project 创建完成
+
+- 用户确认在 `notjustkoala's Org` 创建 `wild-oasis-demo`，区域 `ap-southeast-1`；Supabase 返回项目费用为每月 `0 USD`，用户在创建前明确确认费用。
+- 新项目 ref 为 `fadfglcobmxxsawxlmpb`；创建后独立读取项目状态为 `ACTIVE_HEALTHY`，数据库为 PostgreSQL `17.6.1.166`（engine 17，GA）。
+- 该项目仅用于 Feature06 演示与人工验收，未复用现有 `wild-oasis-dev` 或其他项目。
+- 本步骤只完成隔离项目创建；尚未执行 migration、base/demo seed、图片上传、rollback-only SQL、Auth 演示账号创建、环境变量配置或 Cron 激活，也未读取、记录或展示任何 secret key。
+- 2026 新项目默认可能不再自动向 Data API 暴露新表；后续必须按已版本化 migration 的显式 grants 与 RLS 合约执行并验证，不能依赖旧的默认权限行为。
