@@ -8,11 +8,11 @@
 - 最后更新：2026-09-22（Asia/Shanghai）。
 - 当前阶段：Feature06「作品集与简历交付」。
 - 当前状态：替代规范 reviewer 最终结论为 ✅ PASS；Feature06 进入人类验证阶段，质量审查尚未启动。用户已明确 Feature05 已验收并授权转入 Feature06；Feature05 旧记录中“最终代码质量审查进行中”是当时的历史中断状态，本文件没有补造该阶段 reviewer 结论。
-- 当前执行项：规格实现与返工已通过规范复审；等待用户完成/确认外部部署与人类验证。
-- 下一步：用户需完成或确认真实双端部署与 production smoke、隔离 Demo migration/seed/rollback-only SQL + Cron 演练、2–3 分钟备用录屏、三次 5 分钟计时演练、陌生读者复述验证；这些证据完成后才能进入质量审查与正式关闭。
-- 当前阻塞：真实部署域名/凭据、演示账号、生产 HTTPS smoke、备用录屏、三次真人计时与陌生读者验证尚未提供；安全定时恢复链尚未在本地 PostgreSQL 实跑或远端 apply/activation，且本轮不会执行远端操作。
+- 当前执行项：两仓库本地提交已经创建，正在进行人工验收第一步的远端发布；尚未产生公开部署或数据库变更。
+- 下一步：恢复 GitHub 写入通道后推送两个提交；由用户确认使用的 Supabase 组织、区域和平台返回的费用后创建隔离 Demo Project，再执行 migration/seed/rollback-only SQL、双端部署与 production smoke。
+- 当前阻塞：GitHub HTTPS/SSH 网络均被重置，已连接 GitHub integration 对目标仓库 Git Data 写入返回 403；Windows Computer Use runtime 不可用，Chrome 控制回退也因插件导入错误未建立。Supabase 创建项目仍等待组织/区域/费用确认。
 - 正在运行的进程/测试：无；两端完整 `check` 与本轮针对性测试均已结束。
-- 安全边界：不提交、不推送、不发布，不向远端 Supabase 写入，不重跑付费 live eval；保留两仓库全部 Feature05 未提交改动。
+- 安全边界：本地提交已获用户授权并完成；推送、发布和远端 Supabase 写入仍未成功，不重跑付费 live eval。任何 secret、密码和真实邮箱都不写入 Git、日志或本文件。
 
 ## 项目与基线
 
@@ -192,3 +192,13 @@ Feature06 开始前已经存在的 Feature05 改动属于用户资产；本阶�
 - 已按实际代码复核身份边界：Guest 使用 Auth.js Google OAuth，生产 callback 为 `https://<guest-host>/api/auth/callback/google`；Staff 使用 Supabase Auth 邮箱密码账号，并从受信 `app_metadata.role` 区分 `admin`、`staff` 与无权账号。部署 Runbook 已纠正原先把 `DEMO_GUEST` 写成 Supabase Auth 密码账号的不准确说明。
 - 人工部署顺序保持安全失败关闭：先在隔离 Demo Project 完成全部 migration、base seed、图片、demo seed 与 rollback-only SQL，同时保持 `DEMO_RESET_ENABLED=false`；再依次部署 Guest、Staff，回填双方 exact origin 后重新部署 Guest。Cron route 先验证关闭态 503，再临时开启并重新部署完成一次受保护手动调用；验证成功后才保持开启并启用计划任务，失败则立即回退为关闭态。
 - 当前仍未执行远端 migration、seed、平台部署、Cron 激活或人工验收；这些项目必须由实际执行结果更新，不能以本地检查代替。
+
+### 2026-09-22 — 人工部署执行：本地发布准备完成，远端通道阻塞
+
+- Staff 完整 `npm run check` 通过：8 files/70 tests、typecheck、Vite production build；`docs:check` 通过 28 files/72 links。创建提交 `3c6e05f feat: complete AI evaluation and demo delivery`。
+- Guest/BFF 完整 `npm run check` 通过：40 files/527 tests、typecheck、Next production build；`docs:check` 通过 21 files/7 links。保留 4 个既有 `<img>` warning 和 Windows webpack cache EPERM warning，实际编译与 14 页生成成功。创建提交 `f81d2eb feat: complete AI evaluation and safe demo reset`。
+- 两仓库 `.env.local`/`.env.development.local` 均保持 ignored；提交前按高风险 key 前缀扫描，只有 `.env.example`/README 占位说明命中，没有真实 secret 被暂存。
+- 两仓库 HTTPS `git push` 在沙箱内一次、授权网络下两次均被 connection reset；GitHub connector 可读到目标分支和基线提交，但创建 blob 返回 `403 Resource not accessible by integration`；SSH 22 端口被 reset，官方 SSH-over-443 通道被关闭。没有远端 branch 更新。
+- 用户指定的 Windows Computer Use runtime 返回 unavailable；按技能回退连接 Chrome 时，浏览器客户端因 `node:process` 导入被运行时拒绝，未控制任何网页、未读取浏览器会话或凭据。
+- Supabase 只发现组织 `notjustkoala's Org`（ID 不在本文记录）和四个现有项目；其中没有隔离 Demo Project，且明确不复用 `wild-oasis-dev`。创建新项目前仍需用户选择组织、区域并确认实际费用。Vercel 连接正常但当前 team 下无项目；尚未部署。Netlify 尚未连接。
+- 本批次没有创建 Supabase/Vercel/Netlify 项目，没有执行远端 SQL、上传图片、设置环境变量、创建账号或激活 Cron。
