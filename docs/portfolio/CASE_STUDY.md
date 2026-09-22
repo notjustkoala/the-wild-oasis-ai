@@ -19,12 +19,12 @@ Wild Oasis AI Hospitality Platform 把顾客选房、政策问答和预订预填
 
 | Surface | 技术 | 主要体验 | 源码入口 |
 | --- | --- | --- | --- |
-| Guest Experience | Next.js App Router + AI SDK + Supabase | AI 选房、政策问答、预订预填 | [顾客网站 README](https://github.com/notjustkoala/the-wild-oasis-video/blob/codex/ai-hospitality-platform/README.md) |
+| Guest Experience | Next.js App Router + AI SDK + Supabase | AI 选房、政策问答、预订预填 | [顾客网站 README](https://github.com/notjustkoala/the-wild-oasis-website-ai/blob/main/README.md) |
 | Staff Operations | React + Vite + Supabase + Recharts | 风险 Briefing、经营 Copilot、审批/拒绝 | [运营后台 README](../../README.md) |
 | Shared BFF / Data | Next.js Route Handlers + Supabase RLS | 鉴权、工具、观测、反馈、写入审批 | [部署与数据保护](DEPLOYMENT_RUNBOOK.md) |
 
-跨仓库链接指向两个独立 GitHub origin 的固定
-`codex/ai-hospitality-platform` 分支；Feature06 当前尚未 push，发布后必须逐项实点验证，不能把预期 URL 当作已可访问证据。
+跨仓库链接指向两个独立 GitHub origin 的固定 `main` 分支；Feature06 已完成
+新仓库首次发布并通过 Markdown 链接检查。应用部署 URL 仍必须以真实生产验证为准。
 
 当前仓库没有已核验的公开部署 URL。作品集不能把 `guest.example` / `staff.example` 或本地地址写成线上链接；真实地址发布后按 [部署 Runbook](DEPLOYMENT_RUNBOOK.md) 登记并执行 smoke。
 

@@ -34,9 +34,9 @@
 | 真实数据库权限 | 匿名/普通/员工/管理员读写矩阵、service CRUD、FK/唯一性、无效限流参数/窗口、30天保留与级联清理通过，事务回滚 |
 | 文档与差异 | 两端diff-check通过；人工材料的本地链接全部存在 |
 
-离线报告：[最新JSON](https://github.com/notjustkoala/the-wild-oasis-video/blob/codex/ai-hospitality-platform/tests/ai/reports/offline.json)、[最新Markdown](https://github.com/notjustkoala/the-wild-oasis-video/blob/codex/ai-hospitality-platform/tests/ai/reports/offline.md)。旧报告及最初17/18失败记录在网站 `tests/ai/reports/history/`，不因修复覆盖历史结论。
+离线报告：[最新JSON](https://github.com/notjustkoala/the-wild-oasis-website-ai/blob/main/tests/ai/reports/offline.json)、[最新Markdown](https://github.com/notjustkoala/the-wild-oasis-website-ai/blob/main/tests/ai/reports/offline.md)。旧报告及最初17/18失败记录在网站 `tests/ai/reports/history/`，不因修复覆盖历史结论。
 
-数据库证据：[初批事务](database-verification.json)、[扩展权限/保留验证](database-extended-verification.json)、[真实并发HTTP](https://github.com/notjustkoala/the-wild-oasis-video/blob/codex/ai-hospitality-platform/tests/ai/reports/database/concurrency-1789905042853.json)。迁移 `20260918020821_ai_observability.sql` 已应用开发库，三表RLS于2026-09-20再次只读确认。
+数据库证据：[初批事务](database-verification.json)、[扩展权限/保留验证](database-extended-verification.json)、[真实并发HTTP](https://github.com/notjustkoala/the-wild-oasis-website-ai/blob/main/tests/ai/reports/database/concurrency-1789905042853.json)。迁移 `20260918020821_ai_observability.sql` 已应用开发库，三表RLS于2026-09-20再次只读确认。
 
 ## 真实模型批次
 
@@ -44,10 +44,10 @@
 
 | 批次报告 | 场景通过 | 遥测/反馈 | P50 / P95（ms，nearest-rank） | 说明 |
 | --- | --- | --- | --- | --- |
-| [2026-09-20 首批](https://github.com/notjustkoala/the-wild-oasis-video/blob/codex/ai-hospitality-platform/tests/ai/reports/live/2026-09-20T11-56-29.498Z.json) | 8/10 | 10/10 | 7807 / 20264 | 无库存、工具故障生成失败；原始报告保留 |
-| [2026-09-21 定向两项](https://github.com/notjustkoala/the-wild-oasis-video/blob/codex/ai-hospitality-platform/tests/ai/reports/live/2026-09-21T06-57-22.732Z.json) | 0/2 | 2/2 | 8080 / 8112 | 重试异常/模型API异常，无HTTP状态；未确定具体网络根因 |
-| [无库存补验](https://github.com/notjustkoala/the-wild-oasis-video/blob/codex/ai-hospitality-platform/tests/ai/reports/live/2026-09-21T07-04-35.113Z.json) | 1/1 | 1/1 | 12746 / 12746 | 相同模型/断言通过 |
-| [工具故障补验](https://github.com/notjustkoala/the-wild-oasis-video/blob/codex/ai-hospitality-platform/tests/ai/reports/live/2026-09-21T07-06-17.929Z.json) | 1/1 | 1/1 | 18601 / 18601 | 故障恢复场景通过，run仍正确为failed/tool-error，2次工具错误 |
+| [2026-09-20 首批](https://github.com/notjustkoala/the-wild-oasis-website-ai/blob/main/tests/ai/reports/live/2026-09-20T11-56-29.498Z.json) | 8/10 | 10/10 | 7807 / 20264 | 无库存、工具故障生成失败；原始报告保留 |
+| [2026-09-21 定向两项](https://github.com/notjustkoala/the-wild-oasis-website-ai/blob/main/tests/ai/reports/live/2026-09-21T06-57-22.732Z.json) | 0/2 | 2/2 | 8080 / 8112 | 重试异常/模型API异常，无HTTP状态；未确定具体网络根因 |
+| [无库存补验](https://github.com/notjustkoala/the-wild-oasis-website-ai/blob/main/tests/ai/reports/live/2026-09-21T07-04-35.113Z.json) | 1/1 | 1/1 | 12746 / 12746 | 相同模型/断言通过 |
+| [工具故障补验](https://github.com/notjustkoala/the-wild-oasis-website-ai/blob/main/tests/ai/reports/live/2026-09-21T07-06-17.929Z.json) | 1/1 | 1/1 | 18601 / 18601 | 故障恢复场景通过，run仍正确为failed/tool-error，2次工具错误 |
 
 10 个不同固定场景分批取得通过；不能表述为一次全套10/10，也不把补验耗时拼接为一批延迟分布。没有配置价格文件，成本保持未知；非流式没有TTFT。首批失败场景的部分Token累计问题已修复，后续provider中断总量为null，首批原始值不用于成本估算。
 

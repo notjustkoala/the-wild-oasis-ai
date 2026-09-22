@@ -8,10 +8,10 @@
 
 | 场景 | 顾客网站截图 | 员工后台截图 | 人工检查 |
 | --- | --- | --- | --- |
-| 成功与反馈 | [查看](https://github.com/notjustkoala/the-wild-oasis-video/blob/codex/ai-hospitality-platform/output/playwright/feature05-success.png) | [查看](../../../output/playwright/feature05-success.png) | 回答、请求编号和反馈按钮清晰可见；重跑时点击 Helpful 核对已保存提示 |
-| 无结果 | [查看](https://github.com/notjustkoala/the-wild-oasis-video/blob/codex/ai-hospitality-platform/output/playwright/feature05-empty.png) | [查看](../../../output/playwright/feature05-empty.png) | 明确无结果，可进入普通房型筛选或订单页面 |
-| 模型超时 | [查看](https://github.com/notjustkoala/the-wild-oasis-video/blob/codex/ai-hospitality-platform/output/playwright/feature05-timeout.png) | [查看](../../../output/playwright/feature05-timeout.png) | 错误提示可理解，编号可复制，重试与普通业务入口可用 |
-| 越权拒绝 | [查看](https://github.com/notjustkoala/the-wild-oasis-video/blob/codex/ai-hospitality-platform/output/playwright/feature05-denied.png) | [查看](../../../output/playwright/feature05-denied.png) | 显示受控错误，无受限结果或反馈按钮，可以继续普通业务 |
+| 成功与反馈 | [查看](https://github.com/notjustkoala/the-wild-oasis-website-ai/blob/main/output/playwright/feature05-success.png) | [查看](../../../output/playwright/feature05-success.png) | 回答、请求编号和反馈按钮清晰可见；重跑时点击 Helpful 核对已保存提示 |
+| 无结果 | [查看](https://github.com/notjustkoala/the-wild-oasis-website-ai/blob/main/output/playwright/feature05-empty.png) | [查看](../../../output/playwright/feature05-empty.png) | 明确无结果，可进入普通房型筛选或订单页面 |
+| 模型超时 | [查看](https://github.com/notjustkoala/the-wild-oasis-website-ai/blob/main/output/playwright/feature05-timeout.png) | [查看](../../../output/playwright/feature05-timeout.png) | 错误提示可理解，编号可复制，重试与普通业务入口可用 |
+| 越权拒绝 | [查看](https://github.com/notjustkoala/the-wild-oasis-website-ai/blob/main/output/playwright/feature05-denied.png) | [查看](../../../output/playwright/feature05-denied.png) | 显示受控错误，无受限结果或反馈按钮，可以继续普通业务 |
 
 截图是本机产物，位于两仓库忽略的 `output/playwright/`。在各仓库运行 `npm run test:e2e` 可重新生成；用 `npm run test:e2e -- --headed` 查看浏览器过程。需已安装 Edge（或设置 `E2E_BROWSER_CHANNEL=chrome`）。网站使用端口 3100，后台使用 5174；关闭占用这些端口的旧测试进程后运行。
 

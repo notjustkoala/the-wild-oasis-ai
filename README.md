@@ -16,13 +16,13 @@ RLS and explicit human approval.
 
 | Surface | What it demonstrates | Source | Production |
 | --- | --- | --- | --- |
-| Guest Experience + AI BFF | Streaming room advice, policy Q&A, reservation prefill | [paired website](https://github.com/notjustkoala/the-wild-oasis-video/blob/codex/ai-hospitality-platform/README.md) | Not deployed/verified |
+| Guest Experience + AI BFF | Streaming room advice, policy Q&A, reservation prefill | [paired website](https://github.com/notjustkoala/the-wild-oasis-website-ai/blob/main/README.md) | Not deployed/verified |
 | Staff Operations | Risk Briefing, KPI/chart/booking cards, approval workflow | this repository | Not deployed/verified |
 | Portfolio evidence | architecture, case study, demo, eval and resume claims | [portfolio index](docs/portfolio/CASE_STUDY.md) | Local/versioned artifacts |
 
-Cross-repository links target the intended `codex/ai-hospitality-platform`
-branches in two independent GitHub origins. The current Feature06 changes are
-not pushed, so those links must be clicked and verified after publication.
+Cross-repository links target the published `main` branches in two independent
+GitHub origins. Feature06 source publication and Markdown link checks are
+complete; application deployment URLs still require production verification.
 
 `guest.example` and `staff.example` describe target roles only; they are not
 live links. Real HTTPS URLs must be recorded only after deployment and
@@ -194,7 +194,7 @@ Helpful/Not helpful feedback, with an explicit saved/error state.
 
 The website/BFF owns the Feature05 migrations, server secrets, rate limiting,
 offline/live evaluation, retention cleanup and `ai:observe -- trace UUID`
-diagnostics. Follow its [deployment and observability instructions](https://github.com/notjustkoala/the-wild-oasis-video/blob/codex/ai-hospitality-platform/README.md#feature05-evaluation-and-observability).
+diagnostics. Follow its [deployment and observability instructions](https://github.com/notjustkoala/the-wild-oasis-website-ai/blob/main/README.md#feature05-evaluation-and-observability).
 Set only `VITE_AI_BFF_URL` in this frontend; configure the matching exact
 `AI_ADMIN_ORIGIN` on the BFF. Never add a model or Supabase service key to a
 `VITE_` variable. Browser CORS must allow the existing bearer token and expose

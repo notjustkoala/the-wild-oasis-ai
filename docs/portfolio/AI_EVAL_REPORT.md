@@ -17,7 +17,7 @@
 
 ## 1. 固定离线 Eval
 
-原始报告：[offline.md](https://github.com/notjustkoala/the-wild-oasis-video/blob/codex/ai-hospitality-platform/tests/ai/reports/offline.md) · [offline.json](https://github.com/notjustkoala/the-wild-oasis-video/blob/codex/ai-hospitality-platform/tests/ai/reports/offline.json)
+原始报告：[offline.md](https://github.com/notjustkoala/the-wild-oasis-website-ai/blob/main/tests/ai/reports/offline.md) · [offline.json](https://github.com/notjustkoala/the-wild-oasis-website-ai/blob/main/tests/ai/reports/offline.json)
 
 最新保存报告时间为 `2026-09-21T11:43:26.648Z`。Runner 使用固定输入、独立 stay/库存 oracle、生产 policy service 接口与确定性 adapter；它不调用付费模型或远端数据库。
 
@@ -32,7 +32,7 @@
 
 ## 2. 真实模型固定场景
 
-首批原始报告：[2026-09-20 full run](https://github.com/notjustkoala/the-wild-oasis-video/blob/codex/ai-hospitality-platform/tests/ai/reports/live/2026-09-20T11-56-29.498Z.md)
+首批原始报告：[2026-09-20 full run](https://github.com/notjustkoala/the-wild-oasis-website-ai/blob/main/tests/ai/reports/live/2026-09-20T11-56-29.498Z.md)
 
 - 首批 10/10 场景完成，8/10 scenario pass，generation success 8/10。
 - P50 `7807 ms`，P95 `20264 ms`，使用 nearest-rank 口径。
@@ -41,9 +41,9 @@
 
 后续证据：
 
-- [两场重试仍失败](https://github.com/notjustkoala/the-wild-oasis-video/blob/codex/ai-hospitality-platform/tests/ai/reports/live/2026-09-21T06-57-22.732Z.md)
-- [`live-05-empty` 单场通过](https://github.com/notjustkoala/the-wild-oasis-video/blob/codex/ai-hospitality-platform/tests/ai/reports/live/2026-09-21T07-04-35.113Z.md)
-- [`live-09-tool-error` 单场通过](https://github.com/notjustkoala/the-wild-oasis-video/blob/codex/ai-hospitality-platform/tests/ai/reports/live/2026-09-21T07-06-17.929Z.md)
+- [两场重试仍失败](https://github.com/notjustkoala/the-wild-oasis-website-ai/blob/main/tests/ai/reports/live/2026-09-21T06-57-22.732Z.md)
+- [`live-05-empty` 单场通过](https://github.com/notjustkoala/the-wild-oasis-website-ai/blob/main/tests/ai/reports/live/2026-09-21T07-04-35.113Z.md)
+- [`live-09-tool-error` 单场通过](https://github.com/notjustkoala/the-wild-oasis-website-ai/blob/main/tests/ai/reports/live/2026-09-21T07-06-17.929Z.md)
 
 因此可验证的总结是：**10 个不同固定场景分批取得通过**。最后一个 tool-error recovery 场景按场景规则通过，但 run 状态正确保留为 failed；这证明报告没有把工具错误从 telemetry 中抹掉。
 
@@ -59,7 +59,7 @@
 版本化截图均由 Playwright HTTP fixture 生成，UUID 和反馈 receipt 是合成值：
 
 - Staff：[success](../../output/playwright/feature05-success.png) · [empty](../../output/playwright/feature05-empty.png) · [timeout](../../output/playwright/feature05-timeout.png) · [denied](../../output/playwright/feature05-denied.png)
-- Guest：[success](https://github.com/notjustkoala/the-wild-oasis-video/blob/codex/ai-hospitality-platform/output/playwright/feature05-success.png) · [empty](https://github.com/notjustkoala/the-wild-oasis-video/blob/codex/ai-hospitality-platform/output/playwright/feature05-empty.png) · [timeout](https://github.com/notjustkoala/the-wild-oasis-video/blob/codex/ai-hospitality-platform/output/playwright/feature05-timeout.png) · [denied](https://github.com/notjustkoala/the-wild-oasis-video/blob/codex/ai-hospitality-platform/output/playwright/feature05-denied.png)
+- Guest：[success](https://github.com/notjustkoala/the-wild-oasis-website-ai/blob/main/output/playwright/feature05-success.png) · [empty](https://github.com/notjustkoala/the-wild-oasis-website-ai/blob/main/output/playwright/feature05-empty.png) · [timeout](https://github.com/notjustkoala/the-wild-oasis-website-ai/blob/main/output/playwright/feature05-timeout.png) · [denied](https://github.com/notjustkoala/the-wild-oasis-website-ai/blob/main/output/playwright/feature05-denied.png)
 
 生成来源、状态语义与当前 SHA-256 汇总在 [Fixture Screenshot Manifest](assets/screenshots/README.md)。
 

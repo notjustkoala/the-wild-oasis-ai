@@ -19,10 +19,10 @@ Source test: `tests/e2e/concierge.spec.ts` in the Guest repository.
 
 | State | Asset | HTTP fixture | SHA-256 at Feature06 capture |
 | --- | --- | --- | --- |
-| Success | [feature05-success.png](https://github.com/notjustkoala/the-wild-oasis-video/blob/codex/ai-hospitality-platform/output/playwright/feature05-success.png) | streamed success response | `2a5d089580e5b013f52058006b9e40e1bcb192759d040c901e8dd66971487d76` |
-| Empty | [feature05-empty.png](https://github.com/notjustkoala/the-wild-oasis-video/blob/codex/ai-hospitality-platform/output/playwright/feature05-empty.png) | completed response without recommendation cards | `6f424acdba986c9161a86999f38182646a63b34b801f8a1f6be08fc8ed7edc00` |
-| Timeout | [feature05-timeout.png](https://github.com/notjustkoala/the-wild-oasis-video/blob/codex/ai-hospitality-platform/output/playwright/feature05-timeout.png) | controlled timeout | `4a13f656e29101058953fead8f30e27d7b9e9f406d40d32ca5b698c3e6e2d4f3` |
-| Denied | [feature05-denied.png](https://github.com/notjustkoala/the-wild-oasis-video/blob/codex/ai-hospitality-platform/output/playwright/feature05-denied.png) | controlled forbidden response | `4a13f656e29101058953fead8f30e27d7b9e9f406d40d32ca5b698c3e6e2d4f3` |
+| Success | [feature05-success.png](https://github.com/notjustkoala/the-wild-oasis-website-ai/blob/main/output/playwright/feature05-success.png) | streamed success response | `2a5d089580e5b013f52058006b9e40e1bcb192759d040c901e8dd66971487d76` |
+| Empty | [feature05-empty.png](https://github.com/notjustkoala/the-wild-oasis-website-ai/blob/main/output/playwright/feature05-empty.png) | completed response without recommendation cards | `6f424acdba986c9161a86999f38182646a63b34b801f8a1f6be08fc8ed7edc00` |
+| Timeout | [feature05-timeout.png](https://github.com/notjustkoala/the-wild-oasis-website-ai/blob/main/output/playwright/feature05-timeout.png) | controlled timeout | `4a13f656e29101058953fead8f30e27d7b9e9f406d40d32ca5b698c3e6e2d4f3` |
+| Denied | [feature05-denied.png](https://github.com/notjustkoala/the-wild-oasis-website-ai/blob/main/output/playwright/feature05-denied.png) | controlled forbidden response | `4a13f656e29101058953fead8f30e27d7b9e9f406d40d32ca5b698c3e6e2d4f3` |
 
 Guest timeout and denied currently share the same generic recoverable-error visual, so their PNG hashes are identical even though the tests intercept different HTTP statuses. The HTTP semantics are asserted in test code, not inferred from the pixels.
 

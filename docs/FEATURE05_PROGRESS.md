@@ -28,8 +28,8 @@
 
 1. [总技术方案](design/2026-08-03-ai-hospitality-platform/TECHNICAL_SPEC.md)。顶部仍是 Feature03 的历史对齐状态，不能据此判断 Feature04 未完成。
 2. [Feature05 原始任务](design/2026-08-03-ai-hospitality-platform/feature/05-evaluation-observability.md)。
-3. [Feature04 最终收尾](https://github.com/notjustkoala/the-wild-oasis-video/blob/codex/ai-hospitality-platform/tests/ai/policy-rag-closeout.md)。
-4. [Feature04 原始 live 证据](https://github.com/notjustkoala/the-wild-oasis-video/blob/codex/ai-hospitality-platform/tests/ai/policy-rag-live-evidence.json)。
+3. [Feature04 最终收尾](https://github.com/notjustkoala/the-wild-oasis-website-ai/blob/main/tests/ai/policy-rag-closeout.md)。
+4. [Feature04 原始 live 证据](https://github.com/notjustkoala/the-wild-oasis-website-ai/blob/main/tests/ai/policy-rag-live-evidence.json)。
 
 初始 Git 快照（2026-09-17；仅供定位，接续时重新查询）：
 

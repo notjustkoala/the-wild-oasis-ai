@@ -220,3 +220,17 @@ Feature06 开始前已经存在的 Feature05 改动属于用户资产；本阶�
 - 该项目仅用于 Feature06 演示与人工验收，未复用现有 `wild-oasis-dev` 或其他项目。
 - 本步骤只完成隔离项目创建；尚未执行 migration、base/demo seed、图片上传、rollback-only SQL、Auth 演示账号创建、环境变量配置或 Cron 激活，也未读取、记录或展示任何 secret key。
 - 2026 新项目默认可能不再自动向 Data API 暴露新表；后续必须按已版本化 migration 的显式 grants 与 RLS 合约执行并验证，不能依赖旧的默认权限行为。
+
+### 2026-09-23 — 远端 migration、seed、Storage 与 reset SQL 验证
+
+- 在隔离项目 `fadfglcobmxxsawxlmpb` 按源文件名顺序应用 10 条既有 migration；远端迁移名保留源时间戳前缀。bootstrap 后核验 4 张核心表均启用 RLS，`cabin-images` bucket 存在且公开读取，显式 grants 符合 migration。
+- Security advisor 没有 error；两个无 policy 的 RLS 表为刻意的 service-only deny-by-default，两个 authenticated `SECURITY DEFINER` RPC 为已审查受控例外。Performance advisor 有 2 个 RLS initplan warning 和新库 19 个 unused-index INFO，记录但不冒充已修复。
+- 使用项目专用公开 Storage URL 渲染 ignored base seed，生成器验证为 8 cabins、1 settings、30 guests/30 唯一邮箱；远端写入后再次精确核验，bookings/baseline 当时均为 0。
+- Supabase CLI 通过单次 `127.0.0.1:7897` 代理访问指定 `--project-ref`；递归上传最初落入 `cabins/` 子目录，随即用官方 Storage `mv` 将 8 张 JPG 逐一移动到 bucket 根目录。最终元数据仅含 `cabin-001.jpg` 至 `cabin-008.jpg`，大小与本地一致且 MIME 均为 `image/jpeg`。
+- 应用固定 `supabase/seed.sql` 后核验 800 demo bookings、800 private baseline、0 非 demo 行，双向集合差均为 0；8 个 cabin URL 均精确指向新项目根目录图片。reset RPC 对 PUBLIC/anon/authenticated 均不可执行，仅 service_role 可执行。
+- 首次运行 rollback-only `supabase/tests/demo_reset.sql` 失败并自动回滚：2026 新项目显式权限下，`service_role` 缺少读取 `booking_ai_insights` 的权限，测试无法确认 cascade 清理。
+- 使用 CLI 创建 `20260922160617_grant_service_role_ai_insight_read.sql`，只向 service_role 授予该表 SELECT；新增迁移合约测试禁止客户端或写权限扩大。2 files/9 tests 通过后应用第 11 条远端 migration。
+- 第二次 rollback-only SQL 完整通过：客户端拒绝、固定 provenance、成功/重复 reset、非 demo 保留、AI insight cascade 与冲突失败原子回滚均满足断言。事务回滚后再次核验 bookings/baseline 为 800/800，非 demo 与 AI insight 临时行均为 0。
+- 修复后 Guest/BFF 完整 `npm run check` 通过：lint、typecheck、40 files/528 tests 与 Next production build 全部成功；保留 4 个既有 `<img>` warning 和 Windows webpack cache `EPERM` warning。Guest `docs:check` 为 21 files/7 links，Staff 为 28 files/72 links，双端 `git diff --check` 均通过。
+- 所有有效跨仓库 Markdown URL 已从旧仓库/功能分支切换到新仓库 `the-wild-oasis-ai` 与 `the-wild-oasis-website-ai` 的 `main`；历史日志中的纯文本分支名仍保留为当时事实。
+- 本阶段没有创建 Auth 演示账号、读取或记录 secret key、部署 Vercel/Netlify、启用 reset flag/Cron 或执行生产 smoke。

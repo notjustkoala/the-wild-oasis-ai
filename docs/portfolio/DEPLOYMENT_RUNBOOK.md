@@ -2,13 +2,13 @@
 
 ## 当前发布状态
 
-截至 2026-09-22，仓库没有已核验的公开部署 URL、部署凭据或公开演示账号。本 Runbook 定义发布前置与验证命令，但没有执行发布、远端迁移或生产 smoke。
+截至 2026-09-23，两个源码仓库已发布，隔离 Supabase Demo Project 已完成迁移、seed、Storage 图片与 rollback-only SQL 验证。Guest/Staff 仍没有已核验的公开部署 URL、部署凭据或公开演示账号，也尚未执行生产 smoke。
 
 | Surface | 建议平台 | 目标域名角色 | 实际 URL |
 | --- | --- | --- | --- |
 | Guest + AI BFF | Vercel | `guest.example` 仅作需求中的角色占位 | 待配置，不能用占位域名冒充 |
 | Staff SPA | Netlify | `staff.example` 仅作需求中的角色占位 | 待配置，不能用占位域名冒充 |
-| Shared data | 专用 Supabase Demo Project | 两端共享；与生产隔离 | 待由部署负责人确认 |
+| Shared data | 专用 Supabase Demo Project | 两端共享；与生产隔离 | [`wild-oasis-demo`](https://supabase.com/dashboard/project/fadfglcobmxxsawxlmpb)，`ap-southeast-1`，`ACTIVE_HEALTHY` |
 
 ## 信任边界与环境变量
 
@@ -30,7 +30,7 @@
 - Demo reset：`DEMO_RESET_ENABLED=false` 默认关闭；独立随机
   `CRON_SECRET` 至少 32 字符，供 Vercel 以 Bearer header 调用
 
-完整字段与安全注释见 [Guest `.env.example`](https://github.com/notjustkoala/the-wild-oasis-video/blob/codex/ai-hospitality-platform/.env.example) 和 [Staff `.env.example`](../../.env.example)。所有秘密只在平台环境变量面板配置，不进入 Git、浏览器 bundle、截图或聊天。
+完整字段与安全注释见 [Guest `.env.example`](https://github.com/notjustkoala/the-wild-oasis-website-ai/blob/main/.env.example) 和 [Staff `.env.example`](../../.env.example)。所有秘密只在平台环境变量面板配置，不进入 Git、浏览器 bundle、截图或聊天。
 
 ## 部署顺序
 
@@ -84,9 +84,12 @@
 - `vercel.json` 配置每天 UTC 03:00 一次，满足 Hobby 每日一次。Cron 只在
   production deployment 生效；Vercel 可能重复/重叠投递，由锁和幂等保证。
 
-当前仅完成本地代码与确定性测试：迁移未对远端 apply，baseline 未在远端
-生成，Cron 未部署/激活。本机没有 Docker/Podman，本轮无法执行 rollback-only
-SQL；部署负责人必须按上述顺序在隔离 Demo Project 实跑并保留结果。
+2026-09-23 已在隔离项目 `fadfglcobmxxsawxlmpb` 应用 11 条版本化 migration，
+写入 8 cabins、1 settings、30 guests、800 demo bookings 与 800 private baseline，
+并上传 8 张 cabin 图片。首次 rollback-only SQL 暴露
+`service_role` 缺少 `booking_ai_insights` 只读权限；新增最小 SELECT migration 后
+完整套件通过，回滚后仍精确保持 800/800 且无临时测试行。Cron route 尚未部署或
+激活，`DEMO_RESET_ENABLED` 继续保持 `false`。
 
 紧急停用：把 `DEMO_RESET_ENABLED=false` 并重新部署，同时在 Vercel 禁用
 Cron。不要删除 route 鉴权、直接给浏览器 service secret，或绕过本地生成器
@@ -115,8 +118,8 @@ Smoke 只证明 HTTPS 首页可达和返回预期 app marker，不证明登录�
 - [ ] 浏览器 bundle 不含 server secret、provider key 或密码。
 - [ ] Supabase grants、RLS、角色 `app_metadata` 与受控审批迁移已应用到指定 Demo Project。
 - [ ] `DEMO_ADMIN` 仅用于 Briefing；`DEMO_STAFF` 用于 Copilot；拒绝账号无法访问员工 AI。
-- [ ] Reset migration/seed/rollback-only SQL 已在隔离 Demo Project 验证；Cron flag 之后才启用。
+- [x] Reset migration/seed/rollback-only SQL 已在隔离 Demo Project 验证；Cron flag 仍保持关闭，部署后才按步骤临时启用。
 - [ ] Vercel production Cron 日志显示受保护 route 成功；重复/重叠安全边界已复核。
 - [ ] 两端 `check`、`docs:check` 与真实生产 smoke 通过。
-- [ ] 两个独立 GitHub origin push 后，跨仓库固定分支链接已逐项实点验证。
+- [x] 两个独立 GitHub origin 已发布到 `main`，跨仓库链接已切换到新仓库固定路径并通过 Markdown 检查。
 - [ ] 三次五分钟演练、2–3 分钟备用录屏和陌生读者验证完成。
