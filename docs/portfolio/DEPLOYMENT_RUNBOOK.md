@@ -2,7 +2,7 @@
 
 ## 当前发布状态
 
-截至 2026-09-23，两个源码仓库已发布，隔离 Supabase Demo Project 已完成迁移、seed、Storage 图片与 rollback-only SQL 验证。Guest/BFF 已发布到 Vercel production，并通过仓库 production smoke；现代 Supabase secret 已作为 Hidden/Secret 写入 Vercel 三个环境，等待 redeploy 后复核。Staff 仍未发布，Guest 的 Google OAuth/模型凭据与 Staff exact origin 尚未完成最终配置，因此当前 URL 只算第一步部署证据，不算完整人工验收。
+截至 2026-09-23，两个源码仓库已发布，隔离 Supabase Demo Project 已完成迁移、seed、Storage 图片与 rollback-only SQL 验证。Guest/BFF 已从 clean commit 发布到 Vercel production，并通过仓库 production smoke与只读 Demo 数据 API 复核；现代 Supabase secret 已作为 Hidden/Secret 写入 Vercel 三个环境并随新 deployment 生效。Staff 仍未发布，Guest 的 Google OAuth/模型凭据与 Staff exact origin 尚未完成最终配置，因此当前 URL 只算第一步部署证据，不算完整人工验收。
 
 | Surface | 建议平台 | 目标域名角色 | 实际 URL |
 | --- | --- | --- | --- |

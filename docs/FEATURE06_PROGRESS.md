@@ -8,8 +8,8 @@
 - 最后更新：2026-09-23（Asia/Shanghai）。
 - 当前阶段：Feature06「作品集与简历交付」。
 - 当前状态：替代规范 reviewer 最终结论为 ✅ PASS；Feature06 进入人类验证阶段，质量审查尚未启动。用户已明确 Feature05 已验收并授权转入 Feature06；Feature05 旧记录中“最终代码质量审查进行中”是当时的历史中断状态，本文件没有补造该阶段 reviewer 结论。
-- 当前执行项：隔离 Supabase Demo Project 已完成 migration、seed、Storage 与 rollback-only SQL 验证；Guest/BFF 已发布到 Vercel production，真实域名与仓库 production smoke 已核验；经用户明确授权，现代 Supabase secret 已安全写入 Vercel 三个环境，正在重新部署验证。Staff 尚未发布，Guest 的 Google/AI provider 与双端 origin 尚未补齐。
-- 下一步：完成含新 `SUPABASE_SECRET_KEY` 的 Guest production redeploy，并验证服务端数据路径；随后补齐 Google OAuth、模型 key，做登录/AI 人工验收。之后发布 Staff、回填双方 exact origin，再完成 Cron 手动启用验证。
+- 当前执行项：隔离 Supabase Demo Project 已完成 migration、seed、Storage 与 rollback-only SQL 验证；Guest/BFF 已从 clean commit 重新发布到 Vercel production，现代 Supabase secret 已在三个环境生效，production smoke、只读 Demo 数据链路与失败关闭 Cron 已核验。Staff 尚未发布，Guest 的 Google/AI provider 与双端 origin 尚未补齐。
+- 下一步：补齐 Google OAuth、模型 key，做登录后的 privileged 数据路径与 AI 人工验收；之后发布 Staff、回填双方 exact origin，再完成 Cron 手动启用验证。
 - 当前阻塞：`AUTH_GOOGLE_ID`/`AUTH_GOOGLE_SECRET` 与 `GOOGLE_GENERATIVE_AI_API_KEY` 尚未获准/提供；Staff Netlify 部署与 `AI_ADMIN_ORIGIN` 因而仍待执行。Vercel 的 GitHub Login Connection 未建立，当前只能使用 CLI 发布而非自动 Git 部署。
 - 正在运行的进程/测试：无；两端完整 `check` 与本轮针对性测试均已结束。
 - 安全边界：GitHub 发布、隔离 Supabase 写入和 Guest 首次 Vercel 发布已完成；任何跨平台 secret 传输都必须有明确授权，且不把 secret、密码和真实邮箱写入 Git、日志或本文件。不重跑付费 live eval；Cron 继续保持失败关闭。
@@ -246,3 +246,7 @@ Feature06 开始前已经存在的 Feature05 改动属于用户资产；本阶�
 - 仓库 `npm run smoke:production` 首次受本机故障代理影响返回 `fetch failed`；仅对重跑进程清空代理变量后，同一脚本以真实 production URL 通过并确认 app marker 与 `HTTP 200`。这次通过计为 Guest production smoke，首次失败保留为网络诊断事实。
 - 新增 `.vercelignore` 排除本地 secrets、依赖、构建缓存、测试证据、Supabase SQL 与仓库文档，Vercel link 还在 `.gitignore` 增加 `.env*`；两项仍待提交。首次 deployment 的 source metadata 标记 `gitDirty=1`，因为这两个部署忽略规则当时尚未提交，不把该部署冒充 clean-tree 构建。
 - Vercel GitHub integration 因账号尚无 GitHub Login Connection 而无法建立，当前部署由已授权 CLI 完成；自动 Git 部署待用户以后连接账号，不阻塞本轮 CLI 验收。
+- Guest 部署忽略规则提交为 `a8553dd chore: harden Vercel deployment inputs`，Staff 部署记录提交为 `50a4694 docs: record Guest production deployment`；两者均已推送到各自新仓库的 `main`。
+- 写入 secret 后，从 clean Guest HEAD `a8553dd` 创建 production deployment `dpl_DULFfM2CFR5Q2vbBiauf7MHs2Re1`，状态 `READY`，正式 alias 继续为 [`https://the-wild-oasis-website-ai.vercel.app`](https://the-wild-oasis-website-ai.vercel.app)。`.vercelignore` 将上传缩减到约 `125.5 KB`；Next build、lint、typecheck 与 14 个页面生成成功，仅保留 4 个既有 `<img>` 性能 warning。
+- 新 deployment 复测：仓库 production smoke 在显式 `NO_PROXY=*` 后通过并确认 `HTTP 200`；只读 `/api/cabins/1` 返回 `200`，证明 production alias 到新 Demo Project 的公开数据链路可用；`/api/cron/demo-reset` 仍返回预期 `503`。对应 Vercel runtime logs 全为 info，无 error/warning。
+- Privileged Supabase client 只在已登录顾客查询/写入或受保护后台路径惰性初始化；当前未伪造身份或临时增加探针路由。平台 Hidden/Secret 清单与成功 redeploy 已确认配置进入部署，真正的 privileged 查询留待 Google OAuth 登录配置完成后验收。
