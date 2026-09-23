@@ -5,14 +5,14 @@
 
 ## 当前接续点
 
-- 最后更新：2026-09-22（Asia/Shanghai）。
+- 最后更新：2026-09-23（Asia/Shanghai）。
 - 当前阶段：Feature06「作品集与简历交付」。
 - 当前状态：替代规范 reviewer 最终结论为 ✅ PASS；Feature06 进入人类验证阶段，质量审查尚未启动。用户已明确 Feature05 已验收并授权转入 Feature06；Feature05 旧记录中“最终代码质量审查进行中”是当时的历史中断状态，本文件没有补造该阶段 reviewer 结论。
-- 当前执行项：两仓库本地提交已经创建，正在进行人工验收第一步的远端发布；尚未产生公开部署或数据库变更。
-- 下一步：恢复 GitHub 写入通道后推送两个提交；由用户确认使用的 Supabase 组织、区域和平台返回的费用后创建隔离 Demo Project，再执行 migration/seed/rollback-only SQL、双端部署与 production smoke。
-- 当前阻塞：GitHub HTTPS/SSH 网络均被重置，已连接 GitHub integration 对目标仓库 Git Data 写入返回 403；Windows Computer Use runtime 不可用，Chrome 控制回退也因插件导入错误未建立。Supabase 创建项目仍等待组织/区域/费用确认。
+- 当前执行项：隔离 Supabase Demo Project 已完成 migration、seed、Storage 与 rollback-only SQL 验证；Guest/BFF 已发布到 Vercel production，真实域名与仓库 production smoke 已核验；经用户明确授权，现代 Supabase secret 已安全写入 Vercel 三个环境，正在重新部署验证。Staff 尚未发布，Guest 的 Google/AI provider 与双端 origin 尚未补齐。
+- 下一步：完成含新 `SUPABASE_SECRET_KEY` 的 Guest production redeploy，并验证服务端数据路径；随后补齐 Google OAuth、模型 key，做登录/AI 人工验收。之后发布 Staff、回填双方 exact origin，再完成 Cron 手动启用验证。
+- 当前阻塞：`AUTH_GOOGLE_ID`/`AUTH_GOOGLE_SECRET` 与 `GOOGLE_GENERATIVE_AI_API_KEY` 尚未获准/提供；Staff Netlify 部署与 `AI_ADMIN_ORIGIN` 因而仍待执行。Vercel 的 GitHub Login Connection 未建立，当前只能使用 CLI 发布而非自动 Git 部署。
 - 正在运行的进程/测试：无；两端完整 `check` 与本轮针对性测试均已结束。
-- 安全边界：本地提交已获用户授权并完成；推送、发布和远端 Supabase 写入仍未成功，不重跑付费 live eval。任何 secret、密码和真实邮箱都不写入 Git、日志或本文件。
+- 安全边界：GitHub 发布、隔离 Supabase 写入和 Guest 首次 Vercel 发布已完成；任何跨平台 secret 传输都必须有明确授权，且不把 secret、密码和真实邮箱写入 Git、日志或本文件。不重跑付费 live eval；Cron 继续保持失败关闭。
 
 ## 项目与基线
 
@@ -234,3 +234,15 @@ Feature06 开始前已经存在的 Feature05 改动属于用户资产；本阶�
 - 修复后 Guest/BFF 完整 `npm run check` 通过：lint、typecheck、40 files/528 tests 与 Next production build 全部成功；保留 4 个既有 `<img>` warning 和 Windows webpack cache `EPERM` warning。Guest `docs:check` 为 21 files/7 links，Staff 为 28 files/72 links，双端 `git diff --check` 均通过。
 - 所有有效跨仓库 Markdown URL 已从旧仓库/功能分支切换到新仓库 `the-wild-oasis-ai` 与 `the-wild-oasis-website-ai` 的 `main`；历史日志中的纯文本分支名仍保留为当时事实。
 - 本阶段没有创建 Auth 演示账号、读取或记录 secret key、部署 Vercel/Netlify、启用 reset flag/Cron 或执行生产 smoke。
+
+### 2026-09-23 — Guest/BFF 首次 Vercel production 部署与 smoke
+
+- 在个人 Vercel scope 创建并链接项目 `the-wild-oasis-website-ai`；CLI deployment `dpl_6sNN9bC2UV3q6mRjc57qVJ8oLE1z` 状态为 `READY`，production alias 为 [`https://the-wild-oasis-website-ai.vercel.app`](https://the-wild-oasis-website-ai.vercel.app)，构建对应 Guest 提交 `87149f1`。
+- Vercel 已为 Production/Preview/Development 配置新 Demo Project 的 `SUPABASE_URL`、`SUPABASE_PUBLISHABLE_KEY`，以及 `AUTH_TRUST_HOST=true`、`AI_PROVIDER=google`、`DEMO_RESET_ENABLED=false`；另在平台内生成并保存 `NEXTAUTH_SECRET`、`AI_OBSERVABILITY_SECRET`、`CRON_SECRET`。本文不记录任何值。
+- 用户已明确同意把项目 `fadfglcobmxxsawxlmpb` 的默认 `sb_secret_...` 服务端密钥传输到该 Vercel 项目的 Production/Preview/Development。CLI 在内存中选择 `name=default,type=secret` 的现代 key，经标准输入写为 Hidden/Secret `SUPABASE_SECRET_KEY`，并确认覆盖三个环境；没有从旧本地项目复制 secret，也没有把完整密钥输出到聊天、日志或文件。
+- `AUTH_GOOGLE_ID`、`AUTH_GOOGLE_SECRET`、`GOOGLE_GENERATIVE_AI_API_KEY` 与 `AI_ADMIN_ORIGIN` 尚未完成生产配置；前两项需要确认生产 callback，模型 key 当前没有可用来源，Staff origin 要等 Staff 发布。因此当前部署不能作为登录、AI 或双端审批闭环通过证据。
+- 生产 HTTP 验证：首页、`/cabins`、`/api/auth/providers` 均为 `200`；provider JSON 返回 Google signin/callback，精确 callback 为 `https://the-wild-oasis-website-ai.vercel.app/api/auth/callback/google`。`/api/cron/demo-reset` 无凭据 GET 返回预期 `503`，证明默认关闭开关生效且未触发 reset。
+- Vercel 最近 30 分钟 production runtime logs 与上述请求一致，无 error/warning；首页、cabins、providers 为 `200`，Cron route 为预期 `503`。
+- 仓库 `npm run smoke:production` 首次受本机故障代理影响返回 `fetch failed`；仅对重跑进程清空代理变量后，同一脚本以真实 production URL 通过并确认 app marker 与 `HTTP 200`。这次通过计为 Guest production smoke，首次失败保留为网络诊断事实。
+- 新增 `.vercelignore` 排除本地 secrets、依赖、构建缓存、测试证据、Supabase SQL 与仓库文档，Vercel link 还在 `.gitignore` 增加 `.env*`；两项仍待提交。首次 deployment 的 source metadata 标记 `gitDirty=1`，因为这两个部署忽略规则当时尚未提交，不把该部署冒充 clean-tree 构建。
+- Vercel GitHub integration 因账号尚无 GitHub Login Connection 而无法建立，当前部署由已授权 CLI 完成；自动 Git 部署待用户以后连接账号，不阻塞本轮 CLI 验收。

@@ -2,11 +2,11 @@
 
 ## 当前发布状态
 
-截至 2026-09-23，两个源码仓库已发布，隔离 Supabase Demo Project 已完成迁移、seed、Storage 图片与 rollback-only SQL 验证。Guest/Staff 仍没有已核验的公开部署 URL、部署凭据或公开演示账号，也尚未执行生产 smoke。
+截至 2026-09-23，两个源码仓库已发布，隔离 Supabase Demo Project 已完成迁移、seed、Storage 图片与 rollback-only SQL 验证。Guest/BFF 已发布到 Vercel production，并通过仓库 production smoke；现代 Supabase secret 已作为 Hidden/Secret 写入 Vercel 三个环境，等待 redeploy 后复核。Staff 仍未发布，Guest 的 Google OAuth/模型凭据与 Staff exact origin 尚未完成最终配置，因此当前 URL 只算第一步部署证据，不算完整人工验收。
 
 | Surface | 建议平台 | 目标域名角色 | 实际 URL |
 | --- | --- | --- | --- |
-| Guest + AI BFF | Vercel | `guest.example` 仅作需求中的角色占位 | 待配置，不能用占位域名冒充 |
+| Guest + AI BFF | Vercel | `guest.example` 仅作需求中的角色占位 | [`https://the-wild-oasis-website-ai.vercel.app`](https://the-wild-oasis-website-ai.vercel.app)（production，首次 smoke 已通过） |
 | Staff SPA | Netlify | `staff.example` 仅作需求中的角色占位 | 待配置，不能用占位域名冒充 |
 | Shared data | 专用 Supabase Demo Project | 两端共享；与生产隔离 | [`wild-oasis-demo`](https://supabase.com/dashboard/project/fadfglcobmxxsawxlmpb)，`ap-southeast-1`，`ACTIVE_HEALTHY` |
 
@@ -88,8 +88,10 @@
 写入 8 cabins、1 settings、30 guests、800 demo bookings 与 800 private baseline，
 并上传 8 张 cabin 图片。首次 rollback-only SQL 暴露
 `service_role` 缺少 `booking_ai_insights` 只读权限；新增最小 SELECT migration 后
-完整套件通过，回滚后仍精确保持 800/800 且无临时测试行。Cron route 尚未部署或
-激活，`DEMO_RESET_ENABLED` 继续保持 `false`。
+完整套件通过，回滚后仍精确保持 800/800 且无临时测试行。Cron route 已随 Guest
+production deployment 发布；无凭据 GET 返回预期 `503`，Vercel 日志确认请求命中
+production serverless route。`DEMO_RESET_ENABLED` 继续保持 `false`，尚未执行启用态
+手动调用或激活验收。
 
 紧急停用：把 `DEMO_RESET_ENABLED=false` 并重新部署，同时在 Vercel 禁用
 Cron。不要删除 route 鉴权、直接给浏览器 service secret，或绕过本地生成器
@@ -113,13 +115,13 @@ Smoke 只证明 HTTPS 首页可达和返回预期 app marker，不证明登录�
 
 ## 发布检查表
 
-- [ ] 两个真实 URL 均为 HTTPS，且不是 preview/占位域。
+- [ ] 两个真实 URL 均为 HTTPS，且不是 preview/占位域（Guest 已完成，Staff 待发布）。
 - [ ] Staff 与 BFF exact-origin CORS 双向配置正确。
 - [ ] 浏览器 bundle 不含 server secret、provider key 或密码。
 - [ ] Supabase grants、RLS、角色 `app_metadata` 与受控审批迁移已应用到指定 Demo Project。
 - [ ] `DEMO_ADMIN` 仅用于 Briefing；`DEMO_STAFF` 用于 Copilot；拒绝账号无法访问员工 AI。
 - [x] Reset migration/seed/rollback-only SQL 已在隔离 Demo Project 验证；Cron flag 仍保持关闭，部署后才按步骤临时启用。
 - [ ] Vercel production Cron 日志显示受保护 route 成功；重复/重叠安全边界已复核。
-- [ ] 两端 `check`、`docs:check` 与真实生产 smoke 通过。
+- [ ] 两端 `check`、`docs:check` 与真实生产 smoke 通过（本地检查均已通过；Guest production smoke 已通过，Staff 待发布）。
 - [x] 两个独立 GitHub origin 已发布到 `main`，跨仓库链接已切换到新仓库固定路径并通过 Markdown 检查。
 - [ ] 三次五分钟演练、2–3 分钟备用录屏和陌生读者验证完成。
