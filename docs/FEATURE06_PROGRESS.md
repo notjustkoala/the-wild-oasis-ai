@@ -8,9 +8,9 @@
 - 最后更新：2026-09-23（Asia/Shanghai）。
 - 当前阶段：Feature06「作品集与简历交付」。
 - 当前状态：替代规范 reviewer 最终结论为 ✅ PASS；Feature06 进入人类验证阶段，质量审查尚未启动。用户已明确 Feature05 已验收并授权转入 Feature06；Feature05 旧记录中“最终代码质量审查进行中”是当时的历史中断状态，本文件没有补造该阶段 reviewer 结论。
-- 当前执行项：隔离 Supabase Demo Project 已完成 migration、seed、Storage 与 rollback-only SQL 验证；Guest/BFF 已从 clean commit 发布到 Vercel production，现代 Supabase secret 与 Google OAuth 凭据已安全写入三个环境。用户已登记 production callback 并完成真实 Google 登录；日志确认 callback、`/account`、reservations/profile 的 authenticated/privileged 链路。Profile 随后暴露旧国家 API 响应形状错误，已修复、完整检查并重新部署，等待用户刷新确认 UI。
-- 下一步：用户刷新已登录 Profile，确认国家下拉框恢复；随后配置模型 key、做 AI 人工验收。之后发布 Staff、回填双方 exact origin，再完成 Cron 手动启用验证。
-- 当前阻塞：`GOOGLE_GENERATIVE_AI_API_KEY` 尚未提供；Profile 修复仍待已登录浏览器人眼确认；Staff Netlify 部署与 `AI_ADMIN_ORIGIN` 仍待执行。Vercel 的 GitHub Login Connection 未建立，当前只能使用 CLI 发布而非自动 Git 部署。
+- 当前执行项：隔离 Supabase Demo Project 已完成 migration、seed、Storage 与 rollback-only SQL 验证；Guest/BFF 已从 clean commit 发布到 Vercel production，现代 Supabase secret 与 Google OAuth 凭据已安全写入三个环境。用户已登记 production callback、完成真实 Google 登录，并在修复后确认 Profile 国家下拉框正常显示；authenticated/privileged 顾客链路验收通过。
+- 下一步：配置模型 key 并做 Guest AI 人工验收；同时准备 Staff Netlify 部署，写入新 Demo Project 的浏览器安全变量和 Guest exact origin。取得 Staff URL 后回填 `AI_ADMIN_ORIGIN`，再完成双端 smoke 与 Cron 手动启用验证。
+- 当前阻塞：`GOOGLE_GENERATIVE_AI_API_KEY` 尚未提供；Staff Netlify 部署与 `AI_ADMIN_ORIGIN` 仍待执行。Vercel 的 GitHub Login Connection 未建立，当前只能使用 CLI 发布而非自动 Git 部署。
 - 正在运行的进程/测试：无；两端完整 `check` 与本轮针对性测试均已结束。
 - 安全边界：GitHub 发布、隔离 Supabase 写入和 Guest 首次 Vercel 发布已完成；任何跨平台 secret 传输都必须有明确授权，且不把 secret、密码和真实邮箱写入 Git、日志或本文件。不重跑付费 live eval；Cron 继续保持失败关闭。
 
@@ -258,4 +258,4 @@ Feature06 开始前已经存在的 Feature05 改动属于用户资产；本阶�
 - 同批日志发现 `/account/profile` 虽返回 `200`，服务端仍有 `TypeError: i.find is not a function`。根因为页面调用旧 `https://restcountries.com/v2/all` 并假设顶层数组；当前服务返回非数组错误对象，导致 `countries.find` 崩溃。此前 `iss missing` callback error 的时间早于成功登录，属于登记 callback 前的历史失败，不是当前链路回归。
 - Guest 提交 `8134ccb fix: remove fragile country API dependency` 删除运行时国家 API 调用，新增 249 个 ISO alpha-2 code 清单，用 Node `Intl.DisplayNames` 生成英文名称并按既有 `flagcdn.com/{code}.svg` 约定构造旗帜 URL；未知旧数据库国家名作为临时 option 保留，空 nationality 正确显示 placeholder。
 - 新增 `tests/countries.test.ts` 覆盖 249 个唯一 code、US/CN 映射、排序、HTTPS flag URL 与缓存引用。Guest 完整 `npm run check` 通过：lint、typecheck、41 files/530 tests、Next production build；只保留 4 个既有 `<img>` warning 和 Windows webpack cache `EPERM` warning。
-- 修复提交已推送 Guest `main`，production deployment `dpl_nbKo1DVXGa7ipFxqS3RNCwtbus7g` 状态 `READY` 并接管正式 alias。重新验证登录页/provider `200`、callback 精确、Cron 关闭态 `503`；仓库 production smoke 在单独直连执行时通过。Profile UI 等待用户在现有登录会话刷新确认。
+- 修复提交已推送 Guest `main`，production deployment `dpl_nbKo1DVXGa7ipFxqS3RNCwtbus7g` 状态 `READY` 并接管正式 alias。重新验证登录页/provider `200`、callback 精确、Cron 关闭态 `503`；仓库 production smoke 在单独直连执行时通过。用户随后在现有登录会话刷新 Profile，确认页面和国家下拉框正常显示，本修复的人类验收通过。
