@@ -8,9 +8,9 @@
 - 最后更新：2026-09-23（Asia/Shanghai）。
 - 当前阶段：Feature06「作品集与简历交付」。
 - 当前状态：替代规范 reviewer 最终结论为 ✅ PASS；Feature06 进入人类验证阶段，质量审查尚未启动。用户已明确 Feature05 已验收并授权转入 Feature06；Feature05 旧记录中“最终代码质量审查进行中”是当时的历史中断状态，本文件没有补造该阶段 reviewer 结论。
-- 当前执行项：隔离 Supabase Demo Project 已完成 migration、seed、Storage 与 rollback-only SQL 验证；Guest/BFF 已从 clean commit 重新发布到 Vercel production，现代 Supabase secret 已在三个环境生效，production smoke、只读 Demo 数据链路与失败关闭 Cron 已核验。Staff 尚未发布，Guest 的 Google/AI provider 与双端 origin 尚未补齐。
-- 下一步：补齐 Google OAuth、模型 key，做登录后的 privileged 数据路径与 AI 人工验收；之后发布 Staff、回填双方 exact origin，再完成 Cron 手动启用验证。
-- 当前阻塞：`AUTH_GOOGLE_ID`/`AUTH_GOOGLE_SECRET` 与 `GOOGLE_GENERATIVE_AI_API_KEY` 尚未获准/提供；Staff Netlify 部署与 `AI_ADMIN_ORIGIN` 因而仍待执行。Vercel 的 GitHub Login Connection 未建立，当前只能使用 CLI 发布而非自动 Git 部署。
+- 当前执行项：隔离 Supabase Demo Project 已完成 migration、seed、Storage 与 rollback-only SQL 验证；Guest/BFF 已从 clean commit 发布到 Vercel production，现代 Supabase secret 与 Google OAuth 凭据已安全写入三个环境并随新 deployment 生效。Production smoke、只读 Demo 数据链路、登录入口/provider callback 与失败关闭 Cron 已核验；真实 Google 授权回调仍待人工登录确认。
+- 下一步：用户在 Google OAuth Web client 登记/确认 production callback，并在真实浏览器点击一次 Google 登录，验证回调后的 privileged guest 查询/创建；随后配置模型 key、做 AI 人工验收。之后发布 Staff、回填双方 exact origin，再完成 Cron 手动启用验证。
+- 当前阻塞：`GOOGLE_GENERATIVE_AI_API_KEY` 尚未提供；Google OAuth 控制台 callback 配置与真实账号登录需要用户人工确认；Staff Netlify 部署与 `AI_ADMIN_ORIGIN` 仍待执行。Vercel 的 GitHub Login Connection 未建立，当前只能使用 CLI 发布而非自动 Git 部署。
 - 正在运行的进程/测试：无；两端完整 `check` 与本轮针对性测试均已结束。
 - 安全边界：GitHub 发布、隔离 Supabase 写入和 Guest 首次 Vercel 发布已完成；任何跨平台 secret 传输都必须有明确授权，且不把 secret、密码和真实邮箱写入 Git、日志或本文件。不重跑付费 live eval；Cron 继续保持失败关闭。
 
@@ -250,3 +250,7 @@ Feature06 开始前已经存在的 Feature05 改动属于用户资产；本阶�
 - 写入 secret 后，从 clean Guest HEAD `a8553dd` 创建 production deployment `dpl_DULFfM2CFR5Q2vbBiauf7MHs2Re1`，状态 `READY`，正式 alias 继续为 [`https://the-wild-oasis-website-ai.vercel.app`](https://the-wild-oasis-website-ai.vercel.app)。`.vercelignore` 将上传缩减到约 `125.5 KB`；Next build、lint、typecheck 与 14 个页面生成成功，仅保留 4 个既有 `<img>` 性能 warning。
 - 新 deployment 复测：仓库 production smoke 在显式 `NO_PROXY=*` 后通过并确认 `HTTP 200`；只读 `/api/cabins/1` 返回 `200`，证明 production alias 到新 Demo Project 的公开数据链路可用；`/api/cron/demo-reset` 仍返回预期 `503`。对应 Vercel runtime logs 全为 info，无 error/warning。
 - Privileged Supabase client 只在已登录顾客查询/写入或受保护后台路径惰性初始化；当前未伪造身份或临时增加探针路由。平台 Hidden/Secret 清单与成功 redeploy 已确认配置进入部署，真正的 privileged 查询留待 Google OAuth 登录配置完成后验收。
+- 用户明确授权把 Guest 本地 `.env.local` 中现有 `AUTH_GOOGLE_ID` 与 `AUTH_GOOGLE_SECRET` 写入 Vercel 项目 `the-wild-oasis-website-ai` 的 Production/Preview/Development。只读取这两个指定字段；Client ID 作为 Config、Client Secret 作为 Hidden/Secret 经标准输入传输，未回显值、未覆盖本地文件，也未读取/复制旧 Supabase secret。
+- OAuth deployment `dpl_3BiwbY7idybtye68tfCsiH69bEWC` 远端状态为 `READY` 并接管 production alias。CLI 等待回执时曾在 lint/typecheck 已通过后返回通用 `fetch failed`，独立 `vercel inspect` 证明这是本地连接中断而非 build failure，因此没有创建重复 deployment。
+- 新 deployment 的 `/login` 与 `/api/auth/providers` 均返回 `200`，provider JSON 精确生成 production callback `https://the-wild-oasis-website-ai.vercel.app/api/auth/callback/google`。直接 GET signin endpoint 返回 `302`，runtime log 明确为 Auth.js `UnknownAction: Unsupported action`；真实代码通过 Server Action POST 发起登录，故该 GET 不是有效 OAuth 失败证据。
+- 尝试用隔离 Playwright 会话点击真实按钮，但两次 CLI 命令均未输出快照、也未生成新的会话文件；按排障停止条件终止，没有访问用户 Chrome、Google 账号或提交授权。真实 Google 登录、callback 后 guest 查询/创建和 session guestId 仍保持人工验收待办。
