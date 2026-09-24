@@ -8,10 +8,10 @@
 - 最后更新：2026-09-24（Asia/Shanghai）。
 - 当前阶段：Feature06「作品集与简历交付」。
 - 当前状态：替代规范 reviewer 最终结论为 ✅ PASS；Feature06 进入人类验证阶段，质量审查尚未启动。用户已明确 Feature05 已验收并授权转入 Feature06；Feature05 旧记录中“最终代码质量审查进行中”是当时的历史中断状态，本文件没有补造该阶段 reviewer 结论。
-- 当前执行项：隔离 Supabase Demo Project 已完成 migration、seed、Storage 与 rollback-only SQL 验证；Guest/BFF 已从 clean commit 发布到 Vercel production，现代 Supabase secret 与 Google OAuth 凭据已安全写入三个环境。用户已登记 production callback、完成真实 Google 登录，并在修复后确认 Profile 国家下拉框正常显示；authenticated/privileged 顾客链路验收通过。
-- 下一步：按用户确认将 Guest/BFF 与 Staff/Admin 统一发布为同一 Vercel 账户下的两个独立 Project；Staff 写入新 Demo Project 的浏览器安全变量和 Guest exact origin，取得 Staff URL 后回填 `AI_ADMIN_ORIGIN`，再完成双端 smoke 与 Cron 手动启用验证。
-- 当前阻塞：`GOOGLE_GENERATIVE_AI_API_KEY` 尚未提供；Staff Vercel production 与 `AI_ADMIN_ORIGIN` 仍待执行。Vercel 的 GitHub Login Connection 未建立，当前继续使用 CLI 发布而非自动 Git 部署。
-- 正在运行的进程/测试：Vercel CLI 设备登录等待用户在浏览器授权；Staff Vercel 配置迁移后的完整 `check`、`docs:check` 与 JSON 校验已通过。
+- 当前执行项：Guest/BFF 与 Staff/Admin 已统一发布到同一 Vercel Hobby 账户下的两个独立 Project。Staff production 为 [`https://the-wild-oasis-ai.vercel.app`](https://the-wild-oasis-ai.vercel.app)，三项浏览器安全变量已写入 Production；Guest production 为 [`https://the-wild-oasis-website-ai.vercel.app`](https://the-wild-oasis-website-ai.vercel.app)，`AI_ADMIN_ORIGIN` 已回填 Staff exact origin。两次重新部署均为 `Ready`，Staff-origin 到 BFF 的 CORS 预检返回 `204`。
+- 下一步：取得并安全配置 `GOOGLE_GENERATIVE_AI_API_KEY` 后执行真实 AI 三段式人工验收；随后按 Runbook 临时启用、手动验证并决定是否保持 Demo reset Cron，创建/核验最小权限 Staff 演示身份，再完成录屏、三次计时和陌生读者验证。
+- 当前阻塞：`GOOGLE_GENERATIVE_AI_API_KEY` 尚未提供；Staff 源码提交 `6cb374e` 与本轮文档更新因终端 TLS connection reset 暂未推送。Vercel 项目使用 Vercel Drop，尚未建立 GitHub 自动部署连接。
+- 正在运行的进程/测试：没有构建或测试仍在运行。Staff Vercel 配置迁移后的完整 `check`、`docs:check` 与 JSON 校验已通过；Staff 仓库 smoke 本轮因本机终端 TLS 链路 `fetch failed`，浏览器已独立确认生产根路径 `200`、深链回退、安全头和构建变量生效。
 - 安全边界：GitHub 发布、隔离 Supabase 写入和 Guest 首次 Vercel 发布已完成；任何跨平台 secret 传输都必须有明确授权，且不把 secret、密码和真实邮箱写入 Git、日志或本文件。不重跑付费 live eval；Cron 继续保持失败关闭。
 
 ## 项目与基线
@@ -53,13 +53,13 @@ Feature06 开始前已经存在的 Feature05 改动属于用户资产；本阶�
 | --- | --- | --- | --- |
 | F06-00 | 基线、范围、文件清单与跨对话入口 | 已完成 | 本文件、两端 AGENTS 指向本文件、dirty 基线已记录 |
 | F06-01 | 统一项目叙事与双端 README | 已完成 | Case Study 与两端 README 包含业务、关系、架构、取舍、测试、角色、限制/未来工作 |
-| F06-02 | 部署配置、环境边界与演示数据保护 | 已完成（本地范围） | 双端 Vercel 配置、env 注释、Runbook、fail-closed 恢复决策与 smoke 工具已落盘；Staff 真实发布进行中 |
+| F06-02 | 部署配置、环境边界与演示数据保护 | 已完成（Cron 验收除外） | 双端 Vercel production、exact-origin 绑定、env 边界与浏览器 smoke 已验证；安全 reset 仍默认关闭，待受保护手动调用 |
 | F06-03 | 三段式演示、失败场景、截图与录屏清单 | 阻塞（外部） | 5 分钟脚本、失败场景、fixture 截图与 manifest 已完成；实际录屏/三次计时/陌生读者待人工 |
 | F06-04 | Eval 报告与可追溯简历表述 | 已完成 | 每个数字链接真实报告；分批 live 口径准确；成本保持 unknown |
-| F06-05 | 链接检查、smoke 工具、两端完整检查与收尾自审 | 已完成（本地范围） | 双端链接/完整 check、smoke 失败关闭、资产范围和配置语法验证通过 |
+| F06-05 | 链接检查、smoke 工具、两端完整检查与收尾自审 | 已完成（生产脚本部分受本机网络阻塞） | 双端链接/完整 check、smoke 失败关闭、Guest 仓库 production smoke 与双端浏览器生产验证通过；Staff 仓库 smoke 本轮受终端 TLS 阻塞 |
 | F06-R1 | 修正 Briefing/Copilot 演示角色 | 已完成（本地范围） | 新增 DEMO_ADMIN，保持生产 admin-only Briefing 权限不变 |
-| F06-R2 | 安全定时演示数据恢复链 | 已完成（本地实现；数据库演练阻塞） | 固定 provenance、私有 baseline、service-only RPC、默认关闭 Cron route、SQL/TS 测试已落盘；SQL 未实跑、远端未启用 |
-| F06-R3 | 独立仓库公开链接稳定化 | 已完成（待发布后验证） | 跨 sibling 文档链接改为固定 GitHub 分支绝对 URL；注明未 push 前不可访问 |
+| F06-R2 | 安全定时演示数据恢复链 | 已完成（Cron 启用态待验收） | 固定 provenance、私有 baseline、service-only RPC、默认关闭 Cron route 与 SQL/TS 测试已落盘；隔离项目 rollback-only SQL 已通过 |
+| F06-R3 | 独立仓库公开链接稳定化 | 已完成 | 两个独立 GitHub origin 已发布，跨 sibling 文档链接使用固定 `main` 绝对 URL 并通过检查 |
 | F06-R4 | Sequence 权限与 migration 初始化顺序 | 已完成（本地范围） | service_role 获得 `setval` 所需 UPDATE；SQL/合约断言；所有 versioned migrations 按文件名应用且不跳过中间迁移 |
 
 ## 已知证据边界
@@ -68,7 +68,7 @@ Feature06 开始前已经存在的 Feature05 改动属于用户资产；本阶�
 - 真实模型首批 10 个固定场景为 8/10，P50 `7807 ms`、P95 `20264 ms`；两个失败分别在后续单场补验通过。准确表述只能是“10 个不同固定场景分批取得通过”，不能写成单次 10/10。
 - 成本没有经核验的价格文件，因此为 unknown/未测，不是 0。
 - 两端浏览器各 5/5 使用 HTTP fixture；真实拒绝 HTTP 和真实开发数据库并发限流是不同证据层，不能混写成生产 E2E。
-- 当前没有真实部署 URL、生产 smoke、可公开演示账号、录屏或三次真人计时证据。
+- 双端已有真实 production URL；Guest 仓库 smoke 已通过，Staff 已有浏览器生产验证，但 Staff 仓库 smoke 本轮受本机 TLS 链路阻塞，不能登记为脚本通过。仍没有可公开演示账号、录屏或三次真人计时证据。
 
 ## 变更日志
 
@@ -77,7 +77,16 @@ Feature06 开始前已经存在的 Feature05 改动属于用户资产；本阶�
 - 用户确认不再使用 Netlify，将 Guest/BFF 与 Staff/Admin 统一为同一 Vercel 账户下的两个独立 Project；此前 Netlify 登录尝试没有创建站点或修改远端资源。
 - Staff 删除 `netlify.toml`，新增 `vercel.json`：保留 Vite `dist` 构建输出、React Router SPA 回退和既有四项安全响应头；`.gitignore` 新增 `/.vercel/`。
 - 迁移后 Staff 完整 `npm run check` 通过：lint、typecheck、8 个测试文件/70 个测试、Vite production build；`docs:check`、`git diff --check` 和 `vercel.json` JSON 解析同时通过。
-- Vercel CLI 使用临时配置目录以避免污染仓库或泄露 token；当前等待设备登录授权。Staff Project、环境变量、production URL 与 Guest `AI_ADMIN_ORIGIN` 尚未创建或写入，不能提前记为部署完成。
+- Vercel CLI 使用临时配置目录以避免污染仓库或泄露 token，但设备登录经代理仍遇到 TLS reset；因此切换到用户已登录的可见 Chrome。本地提交 `6cb374e` 已创建，GitHub push 同样暂被连接重置阻塞。该条记录的是部署前状态，最终部署结果见下一节。
+
+### 2026-09-24 — 双端 Vercel production 部署与 exact-origin 联通
+
+- 从 Staff clean commit `6cb374e` 生成不含 `.git`、`node_modules`、`.env.local` 或 secret 的上传目录，经 Vercel Drop 创建 Hobby Project `the-wild-oasis-ai`；正式 alias 为 [`https://the-wild-oasis-ai.vercel.app`](https://the-wild-oasis-ai.vercel.app)。写入 Production-only 的 `VITE_SUPABASE_URL`、现代 `VITE_SUPABASE_PUBLISHABLE_KEY` 和 `VITE_AI_BFF_URL` 后重新部署，Dashboard reference `AeeYdi6ZAB1AJoKaGYLKQUmSEfnF` 状态为 `Ready`。没有启用 Pro trial 或付费功能。
+- Staff 使用与 Guest 相同的低权限 `sb_publishable_...`；未把 `sb_secret_...`/service-role、模型 key 或密码写入前端。依据当日 Supabase 官方 API-key 文档复核：浏览器使用 publishable key，访问范围继续由 RLS 决定。
+- 浏览器生产验证：`/` 返回 `200` 并渲染 Staff 登录页；直接访问 `/dashboard` 被应用鉴权正确重定向到 `/login`，证明 SPA rewrite 生效；发布 bundle 确认包含三项公开配置；`X-Content-Type-Options=nosniff`、`Referrer-Policy=strict-origin-when-cross-origin`、`Permissions-Policy=camera=(), microphone=(), geolocation=()`、`X-Frame-Options=DENY` 均已生效。
+- Staff 仓库 `npm run smoke:production` 对真实 URL 发起请求时因本机终端 TLS 链路返回 `fetch failed`，未伪造为脚本通过；同一站点已由浏览器同源 HEAD 验证为 `HTTP 200`。这与此前 GitHub push/Vercel CLI 的连接重置一致。
+- Guest Production 新增 Config `AI_ADMIN_ORIGIN=https://the-wild-oasis-ai.vercel.app` 并重新部署；Dashboard reference `FymQ9dzrjnkxp6Dnaikq1DXSRVA3` 状态为 `Ready`，正式 alias 不变。从真实 Staff origin 对 Guest `/api/ai/admin` 发起 CORS `OPTIONS` 预检返回 `204`，Guest 首页重新部署后正常渲染。
+- 仍未配置 `GOOGLE_GENERATIVE_AI_API_KEY`，因此本节只证明双端部署、公开数据配置、SPA/security headers 与 exact-origin CORS，不把真实 AI 生成、员工授权、审批写入或 Cron 启用登记为通过。
 
 ### 2026-09-22 — Feature06 恢复与基线
 
@@ -117,8 +126,8 @@ Feature06 开始前已经存在的 Feature05 改动属于用户资产；本阶�
 
 ## 尚未完成的外部/人类验收
 
-1. 配置并核验 Guest/Staff 真实 HTTPS URL，创建最小权限演示账号，按 Runbook 完成生产部署与双端 smoke。
-2. 在本地/隔离 Demo Project apply migration 与 seed，实跑 rollback-only SQL 套件后再按 Runbook 启用定时恢复；当前实现已有固定 provenance，但尚未经过真实 PostgreSQL 演练、远端 apply 或 Cron 激活。
+1. 双端真实 HTTPS URL 和 exact-origin 已核验；仍需配置模型 key、创建/核验最小权限 Staff 演示账号，并按 Demo Script 完成真实 AI 与审批链人工验收。
+2. 隔离 Demo Project migration、seed 与 rollback-only SQL 已通过；仍需按 Runbook 临时开启 reset flag，完成一次受保护手动调用和非 demo 行复核后，再决定是否保持 Cron 激活。
 3. 按 shot list 录制并隐私复核 2–3 分钟视频，登记公开链接、日期和 SHA-256。
 4. 实际完成三次不超过 5 分钟的计时演练并填写结果。
 5. 请一名不了解项目的人阅读/操作并记录其对闭环、AI 边界、安全和前端难点的复述。

@@ -16,17 +16,17 @@ RLS and explicit human approval.
 
 | Surface | What it demonstrates | Source | Production |
 | --- | --- | --- | --- |
-| Guest Experience + AI BFF | Streaming room advice, policy Q&A, reservation prefill | [paired website](https://github.com/notjustkoala/the-wild-oasis-website-ai/blob/main/README.md) | Not deployed/verified |
-| Staff Operations | Risk Briefing, KPI/chart/booking cards, approval workflow | this repository | Not deployed/verified |
+| Guest Experience + AI BFF | Streaming room advice, policy Q&A, reservation prefill | [paired website](https://github.com/notjustkoala/the-wild-oasis-website-ai/blob/main/README.md) | [Vercel production](https://the-wild-oasis-website-ai.vercel.app) |
+| Staff Operations | Risk Briefing, KPI/chart/booking cards, approval workflow | this repository | [Vercel production](https://the-wild-oasis-ai.vercel.app) |
 | Portfolio evidence | architecture, case study, demo, eval and resume claims | [portfolio index](docs/portfolio/CASE_STUDY.md) | Local/versioned artifacts |
 
 Cross-repository links target the published `main` branches in two independent
 GitHub origins. Feature06 source publication and Markdown link checks are
-complete; application deployment URLs still require production verification.
+complete; both production URLs and their exact-origin BFF binding are verified.
 
-`guest.example` and `staff.example` describe target roles only; they are not
-live links. Real HTTPS URLs must be recorded only after deployment and
-[production smoke verification](docs/portfolio/DEPLOYMENT_RUNBOOK.md).
+`guest.example` and `staff.example` remain documentation roles only; the table
+above contains the verified live URLs. Evidence and remaining acceptance work
+are tracked in the [production runbook](docs/portfolio/DEPLOYMENT_RUNBOOK.md).
 
 ![Wild Oasis dual-surface architecture](docs/portfolio/assets/architecture.svg)
 
@@ -158,24 +158,25 @@ contain every operations screen. Tests mock Supabase and must never contact a
 remote database.
 
 `docs:check` validates local Markdown links without network access.
-`smoke:production` rejects missing, local, private and placeholder URLs; it has
-not been run because no real deployment exists. The versioned lint, test, build, bundle, and Lighthouse baseline for both
+`smoke:production` rejects missing, local, private and placeholder URLs. Guest
+production smoke passed; the Staff script's latest real-URL attempt was blocked
+by the local terminal TLS path, while browser verification confirmed HTTP 200,
+SPA fallback and the expected security headers. The versioned lint, test, build, bundle, and Lighthouse baseline for both
 applications is recorded in [docs/quality-baseline.md](docs/quality-baseline.md).
 
 ## Limitations and future work
 
-- There is no verified public URL, production smoke result, distributable demo
-  account, backup video or independent-reader acceptance yet.
+- Both public URLs are verified, but there is no distributable Staff demo
+  account, backup video, three timed rehearsals or independent-reader acceptance yet.
 - The saved screenshots are Playwright HTTP fixtures, not proof of a model,
   database or production deployment.
-- A fixed-provenance, transaction-locked demo reset RPC and default-disabled
-  daily Cron route are versioned locally, but the migration, baseline seed and
-  Cron have not been applied or activated in a remote Demo Project.
+- A fixed-provenance, transaction-locked demo reset RPC, migration and baseline
+  have been verified in the isolated Demo Project; the daily Cron remains
+  default-disabled until its protected production call is manually accepted.
 - Live-model cost is unknown because no dated, sourced price file was provided;
   no growth, conversion, revenue or uptime claim is made.
-- Future work includes public deployment, platform WAF/distributed throttling,
-  a privacy-reviewed 2–3 minute recording and human validation of the five-minute
-  narrative.
+- Future work includes platform WAF/distributed throttling, a privacy-reviewed
+  2–3 minute recording and human validation of the five-minute narrative.
 
 ## Feature05 validation reference
 

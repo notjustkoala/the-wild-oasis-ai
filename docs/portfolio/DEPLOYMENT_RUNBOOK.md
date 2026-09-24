@@ -2,12 +2,12 @@
 
 ## 当前发布状态
 
-截至 2026-09-24，两个源码仓库已发布，隔离 Supabase Demo Project 已完成迁移、seed、Storage 图片与 rollback-only SQL 验证。Guest/BFF 已从 clean commit 发布到 Vercel production，并通过仓库 production smoke 与只读 Demo 数据 API 复核；现代 Supabase secret 和 Google OAuth 凭据已按 Config/Secret 边界写入三个环境。用户已登记 production callback、真实登录成功，并在修复后确认 Profile 国家下拉框正常显示。用户随后确认两端统一使用 Vercel：Staff 将作为同一账户下的独立 Vite SPA Project 发布，仍未取得 production URL，模型凭据与 Staff exact origin 尚未完成最终配置。
+截至 2026-09-24，两个源码仓库已发布，隔离 Supabase Demo Project 已完成迁移、seed、Storage 图片与 rollback-only SQL 验证。Guest/BFF 与 Staff/Admin 已统一发布为同一 Vercel Hobby 账户下的两个独立 Project；Staff 三项浏览器安全变量和 Guest `AI_ADMIN_ORIGIN` 已写入 Production 并重新部署，两端状态均为 `Ready`。Guest 仓库 production smoke、Staff 浏览器生产验证、SPA 深链、安全响应头与 Staff-origin CORS 预检已经通过；Staff 仓库 smoke 本轮受本机终端 TLS 链路阻塞。Google OAuth 真实登录和 Profile 已验收；模型凭据、Staff 演示身份、Cron 启用态和完整 AI 人工路径仍待完成。
 
 | Surface | 建议平台 | 目标域名角色 | 实际 URL |
 | --- | --- | --- | --- |
 | Guest + AI BFF | Vercel | `guest.example` 仅作需求中的角色占位 | [`https://the-wild-oasis-website-ai.vercel.app`](https://the-wild-oasis-website-ai.vercel.app)（production，首次 smoke 已通过） |
-| Staff SPA | Vercel | `staff.example` 仅作需求中的角色占位 | 待配置，不能用占位域名冒充 |
+| Staff SPA | Vercel | `staff.example` 仅作需求中的角色占位 | [`https://the-wild-oasis-ai.vercel.app`](https://the-wild-oasis-ai.vercel.app)（production，浏览器验证通过） |
 | Shared data | 专用 Supabase Demo Project | 两端共享；与生产隔离 | [`wild-oasis-demo`](https://supabase.com/dashboard/project/fadfglcobmxxsawxlmpb)，`ap-southeast-1`，`ACTIVE_HEALTHY` |
 
 ## 信任边界与环境变量
@@ -103,11 +103,11 @@ Cron。不要删除 route 鉴权、直接给浏览器 service secret，或绕过
 
 ```bash
 # Guest/BFF
-$env:GUEST_PRODUCTION_URL='https://REAL_GUEST_HOST'
+$env:GUEST_PRODUCTION_URL='https://the-wild-oasis-website-ai.vercel.app'
 npm run smoke:production
 
 # Staff
-$env:STAFF_PRODUCTION_URL='https://REAL_STAFF_HOST'
+$env:STAFF_PRODUCTION_URL='https://the-wild-oasis-ai.vercel.app'
 npm run smoke:production
 ```
 
@@ -115,13 +115,13 @@ Smoke 只证明 HTTPS 首页可达和返回预期 app marker，不证明登录�
 
 ## 发布检查表
 
-- [ ] 两个真实 URL 均为 HTTPS，且不是 preview/占位域（Guest 已完成，Staff 待发布）。
-- [ ] Staff 与 BFF exact-origin CORS 双向配置正确。
-- [ ] 浏览器 bundle 不含 server secret、provider key 或密码。
-- [ ] Supabase grants、RLS、角色 `app_metadata` 与受控审批迁移已应用到指定 Demo Project。
+- [x] 两个真实 URL 均为 HTTPS，且不是 preview/占位域。
+- [x] Staff 与 BFF exact-origin CORS 配置正确；真实 Staff origin 预检返回 `204`。
+- [x] Staff 浏览器 bundle 只包含预期公开配置；没有注入 server secret、provider key 或密码。
+- [x] Supabase grants、RLS 与受控审批迁移已应用到指定 Demo Project；演示身份角色仍按下一项单独验收。
 - [ ] `DEMO_ADMIN` 仅用于 Briefing；`DEMO_STAFF` 用于 Copilot；拒绝账号无法访问员工 AI。
 - [x] Reset migration/seed/rollback-only SQL 已在隔离 Demo Project 验证；Cron flag 仍保持关闭，部署后才按步骤临时启用。
 - [ ] Vercel production Cron 日志显示受保护 route 成功；重复/重叠安全边界已复核。
-- [ ] 两端 `check`、`docs:check` 与真实生产 smoke 通过（本地检查均已通过；Guest production smoke 已通过，Staff 待发布）。
+- [ ] 两端 `check`、`docs:check` 与真实生产 smoke 通过（本地检查、Guest production smoke、Staff 浏览器生产验证均通过；Staff 仓库 smoke 本轮受终端 TLS 阻塞）。
 - [x] 两个独立 GitHub origin 已发布到 `main`，跨仓库链接已切换到新仓库固定路径并通过 Markdown 检查。
 - [ ] 三次五分钟演练、2–3 分钟备用录屏和陌生读者验证完成。
