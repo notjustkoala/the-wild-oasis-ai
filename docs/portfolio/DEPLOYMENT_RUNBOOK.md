@@ -2,17 +2,17 @@
 
 ## 当前发布状态
 
-截至 2026-09-23，两个源码仓库已发布，隔离 Supabase Demo Project 已完成迁移、seed、Storage 图片与 rollback-only SQL 验证。Guest/BFF 已从 clean commit 发布到 Vercel production，并通过仓库 production smoke 与只读 Demo 数据 API 复核；现代 Supabase secret 和 Google OAuth 凭据已按 Config/Secret 边界写入三个环境。用户已登记 production callback、真实登录成功，并在修复后确认 Profile 国家下拉框正常显示。Staff 仍未发布，模型凭据与 Staff exact origin 尚未完成最终配置，因此当前 URL 仍不算完整人工验收。
+截至 2026-09-24，两个源码仓库已发布，隔离 Supabase Demo Project 已完成迁移、seed、Storage 图片与 rollback-only SQL 验证。Guest/BFF 已从 clean commit 发布到 Vercel production，并通过仓库 production smoke 与只读 Demo 数据 API 复核；现代 Supabase secret 和 Google OAuth 凭据已按 Config/Secret 边界写入三个环境。用户已登记 production callback、真实登录成功，并在修复后确认 Profile 国家下拉框正常显示。用户随后确认两端统一使用 Vercel：Staff 将作为同一账户下的独立 Vite SPA Project 发布，仍未取得 production URL，模型凭据与 Staff exact origin 尚未完成最终配置。
 
 | Surface | 建议平台 | 目标域名角色 | 实际 URL |
 | --- | --- | --- | --- |
 | Guest + AI BFF | Vercel | `guest.example` 仅作需求中的角色占位 | [`https://the-wild-oasis-website-ai.vercel.app`](https://the-wild-oasis-website-ai.vercel.app)（production，首次 smoke 已通过） |
-| Staff SPA | Netlify | `staff.example` 仅作需求中的角色占位 | 待配置，不能用占位域名冒充 |
+| Staff SPA | Vercel | `staff.example` 仅作需求中的角色占位 | 待配置，不能用占位域名冒充 |
 | Shared data | 专用 Supabase Demo Project | 两端共享；与生产隔离 | [`wild-oasis-demo`](https://supabase.com/dashboard/project/fadfglcobmxxsawxlmpb)，`ap-southeast-1`，`ACTIVE_HEALTHY` |
 
 ## 信任边界与环境变量
 
-### Staff / Netlify（浏览器可见）
+### Staff / Vercel（浏览器可见）
 
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_PUBLISHABLE_KEY`

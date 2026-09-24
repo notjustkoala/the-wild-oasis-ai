@@ -18,6 +18,7 @@ output/playwright/*
 dist
 dist-ssr
 *.local
+/.vercel/
 /.playwright-cli/
 
 # Editor directories and files

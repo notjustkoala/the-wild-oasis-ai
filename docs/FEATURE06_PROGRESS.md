@@ -5,13 +5,13 @@
 
 ## 当前接续点
 
-- 最后更新：2026-09-23（Asia/Shanghai）。
+- 最后更新：2026-09-24（Asia/Shanghai）。
 - 当前阶段：Feature06「作品集与简历交付」。
 - 当前状态：替代规范 reviewer 最终结论为 ✅ PASS；Feature06 进入人类验证阶段，质量审查尚未启动。用户已明确 Feature05 已验收并授权转入 Feature06；Feature05 旧记录中“最终代码质量审查进行中”是当时的历史中断状态，本文件没有补造该阶段 reviewer 结论。
 - 当前执行项：隔离 Supabase Demo Project 已完成 migration、seed、Storage 与 rollback-only SQL 验证；Guest/BFF 已从 clean commit 发布到 Vercel production，现代 Supabase secret 与 Google OAuth 凭据已安全写入三个环境。用户已登记 production callback、完成真实 Google 登录，并在修复后确认 Profile 国家下拉框正常显示；authenticated/privileged 顾客链路验收通过。
-- 下一步：配置模型 key 并做 Guest AI 人工验收；同时准备 Staff Netlify 部署，写入新 Demo Project 的浏览器安全变量和 Guest exact origin。取得 Staff URL 后回填 `AI_ADMIN_ORIGIN`，再完成双端 smoke 与 Cron 手动启用验证。
-- 当前阻塞：`GOOGLE_GENERATIVE_AI_API_KEY` 尚未提供；Staff Netlify 部署与 `AI_ADMIN_ORIGIN` 仍待执行。Vercel 的 GitHub Login Connection 未建立，当前只能使用 CLI 发布而非自动 Git 部署。
-- 正在运行的进程/测试：无；两端完整 `check` 与本轮针对性测试均已结束。
+- 下一步：按用户确认将 Guest/BFF 与 Staff/Admin 统一发布为同一 Vercel 账户下的两个独立 Project；Staff 写入新 Demo Project 的浏览器安全变量和 Guest exact origin，取得 Staff URL 后回填 `AI_ADMIN_ORIGIN`，再完成双端 smoke 与 Cron 手动启用验证。
+- 当前阻塞：`GOOGLE_GENERATIVE_AI_API_KEY` 尚未提供；Staff Vercel production 与 `AI_ADMIN_ORIGIN` 仍待执行。Vercel 的 GitHub Login Connection 未建立，当前继续使用 CLI 发布而非自动 Git 部署。
+- 正在运行的进程/测试：Vercel CLI 设备登录等待用户在浏览器授权；Staff Vercel 配置迁移后的完整 `check`、`docs:check` 与 JSON 校验已通过。
 - 安全边界：GitHub 发布、隔离 Supabase 写入和 Guest 首次 Vercel 发布已完成；任何跨平台 secret 传输都必须有明确授权，且不把 secret、密码和真实邮箱写入 Git、日志或本文件。不重跑付费 live eval；Cron 继续保持失败关闭。
 
 ## 项目与基线
@@ -53,7 +53,7 @@ Feature06 开始前已经存在的 Feature05 改动属于用户资产；本阶�
 | --- | --- | --- | --- |
 | F06-00 | 基线、范围、文件清单与跨对话入口 | 已完成 | 本文件、两端 AGENTS 指向本文件、dirty 基线已记录 |
 | F06-01 | 统一项目叙事与双端 README | 已完成 | Case Study 与两端 README 包含业务、关系、架构、取舍、测试、角色、限制/未来工作 |
-| F06-02 | 部署配置、环境边界与演示数据保护 | 已完成（本地范围） | Netlify/Vercel 配置、env 注释、Runbook、fail-closed 恢复决策与 smoke 工具已落盘；真实发布阻塞 |
+| F06-02 | 部署配置、环境边界与演示数据保护 | 已完成（本地范围） | 双端 Vercel 配置、env 注释、Runbook、fail-closed 恢复决策与 smoke 工具已落盘；Staff 真实发布进行中 |
 | F06-03 | 三段式演示、失败场景、截图与录屏清单 | 阻塞（外部） | 5 分钟脚本、失败场景、fixture 截图与 manifest 已完成；实际录屏/三次计时/陌生读者待人工 |
 | F06-04 | Eval 报告与可追溯简历表述 | 已完成 | 每个数字链接真实报告；分批 live 口径准确；成本保持 unknown |
 | F06-05 | 链接检查、smoke 工具、两端完整检查与收尾自审 | 已完成（本地范围） | 双端链接/完整 check、smoke 失败关闭、资产范围和配置语法验证通过 |
@@ -71,6 +71,13 @@ Feature06 开始前已经存在的 Feature05 改动属于用户资产；本阶�
 - 当前没有真实部署 URL、生产 smoke、可公开演示账号、录屏或三次真人计时证据。
 
 ## 变更日志
+
+### 2026-09-24 — Staff 部署平台统一为 Vercel
+
+- 用户确认不再使用 Netlify，将 Guest/BFF 与 Staff/Admin 统一为同一 Vercel 账户下的两个独立 Project；此前 Netlify 登录尝试没有创建站点或修改远端资源。
+- Staff 删除 `netlify.toml`，新增 `vercel.json`：保留 Vite `dist` 构建输出、React Router SPA 回退和既有四项安全响应头；`.gitignore` 新增 `/.vercel/`。
+- 迁移后 Staff 完整 `npm run check` 通过：lint、typecheck、8 个测试文件/70 个测试、Vite production build；`docs:check`、`git diff --check` 和 `vercel.json` JSON 解析同时通过。
+- Vercel CLI 使用临时配置目录以避免污染仓库或泄露 token；当前等待设备登录授权。Staff Project、环境变量、production URL 与 Guest `AI_ADMIN_ORIGIN` 尚未创建或写入，不能提前记为部署完成。
 
 ### 2026-09-22 — Feature06 恢复与基线
 
