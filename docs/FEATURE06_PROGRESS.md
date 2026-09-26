@@ -8,9 +8,9 @@
 - 最后更新：2026-09-26（Asia/Shanghai）。
 - 当前阶段：Feature06「作品集与简历交付」。
 - 当前状态：替代规范 reviewer 最终结论为 ✅ PASS；Feature06 进入人类验证阶段，质量审查尚未启动。用户已明确 Feature05 已验收并授权转入 Feature06；Feature05 旧记录中“最终代码质量审查进行中”是当时的历史中断状态，本文件没有补造该阶段 reviewer 结论。
-- 当前执行项：Guest/BFF 与 Staff/Admin 已统一发布到同一 Vercel Hobby 账户下的两个独立 Project。Guest Project 已连接新仓库 `notjustkoala/the-wild-oasis-website-ai`，Production deployment `EpThJRTzSjS2qdMvfGCKPGEJ2Jfx` 对应 `main@e12be82` 并包含修复 commit `7376c1d`。生产 Concierge 返回 `200`，Function 实际执行于 `sin1`；Supabase run `78556273-8120-4715-9046-d2aec4a405f9` 为 `completed`，跨区域 `store-unavailable` 修复完成生产验证。
-- 下一步：执行真实 AI 三段式人工验收；随后按 Runbook 临时启用、手动验证并决定是否保持 Demo reset Cron，创建/核验最小权限 Staff 演示身份，完成录屏、三次计时和陌生读者验证。
-- 当前阻塞：Guest 可靠性部署无阻塞。余下项目依赖人工操作/判断：真实三段式演示、Staff 演示身份、Cron 启用态、录屏、三次计时和陌生读者验证。
+- 当前执行项：真实 AI 三段式验收已开始。第一段 Guest Production 已用隔离浏览器完成真实 Concierge → `searchAvailableCabins` → 推荐卡 → **Adopt plan** → `/cabins/3#reservation` 预填链路，Supabase run `90f9b82c-4e8e-4721-903d-22dcaf8e846d` 为 `completed`。第二、三段员工验收尚未开始。
+- 下一步：在隔离 Supabase Demo Project 创建/核验两个邮箱密码演示身份，并仅通过受信路径设置 `app_metadata.role=admin` 的 `DEMO_ADMIN` 与 `app_metadata.role=staff` 的 `DEMO_STAFF`；随后分别执行 Briefing 与 Copilot Reject/Approve 生产验收。
+- 当前阻塞：Supabase Auth 只读统计显示当前仅 1 个 `app_metadata.role=none` 用户，`admin=0`、`staff=0`；没有可用 `DEMO_ADMIN`/`DEMO_STAFF`，且仓库/聊天不得保存演示账号密码。需用户在 Supabase Auth Dashboard 创建并自行保管两个账号凭据后才能继续员工端登录验收。Cron 启用态、录屏、三次计时和陌生读者验证仍待人工。
 - 正在运行的进程/测试：没有构建或测试仍在运行。Guest 修复后的完整 `npm run check` 通过（41 files / 530 tests、typecheck、lint、production build）；仅保留 4 条既有 `<img>` warning 和 Windows webpack cache rename warning。Staff 仓库 smoke 本轮仍受本机终端 TLS 链路 `fetch failed`。
 - 安全边界：GitHub 发布、隔离 Supabase 写入和 Guest 首次 Vercel 发布已完成；任何跨平台 secret 传输都必须有明确授权，且不把 secret、密码和真实邮箱写入 Git、日志或本文件。不重跑付费 live eval；Cron 继续保持失败关闭。
 
@@ -71,6 +71,16 @@ Feature06 开始前已经存在的 Feature05 改动属于用户资产；本阶�
 - 双端已有真实 production URL；Guest 仓库 smoke 已通过，Staff 已有浏览器生产验证，但 Staff 仓库 smoke 本轮受本机 TLS 链路阻塞，不能登记为脚本通过。仍没有可公开演示账号、录屏或三次真人计时证据。
 
 ## 变更日志
+
+### 2026-09-26 — 三段式人工验收启动：Guest 生产链路通过
+
+- 按 Five-Minute Demo Script 开始验收，用户故事固定为 Guest UI → `/api/ai/concierge` → Gemini/Supabase 工具 → 推荐卡 → Adopt plan；员工端后续为 Supabase Auth 角色 → Briefing/Copilot → 人工审批。
+- 官方 `agent-browser` 未安装，官方 Playwright CLI 又因本机 npm/TLS `ECONNRESET` 无法取得；使用仓库已锁定的 Playwright 库与系统 Chrome 的全新隔离 profile 执行公开 Guest 验收，没有读取日常 Chrome Cookie、密码或 Google 会话。首次点击发生在 hydration 前，调整为等待 network idle 后单次重试通过。
+- 真实输入使用未来固定日期 `2026-10-10` 至 `2026-10-13`、4 人、总预算不超过 `$1,200` 与自然景观偏好。Production 首页返回 `200`，Concierge 展示 live availability，推荐 Cabin `003`（3 晚、4 人、`$900`）和其他候选；点击 **Adopt plan for 003** 后 URL 为 `/cabins/3#reservation`，页面出现 `AI plan applied. Review the dates before reserving.`。没有点击最终预订提交。
+- 浏览器无 console error、page error；路由切换时旧 `?_rsc=` 请求出现一次 `ERR_ABORTED`，属于 Next.js navigation 取消旧请求，不登记为产品失败。截图保存在 ignored 本地证据 `output/playwright/feature06-production-guest.png`，SHA-256 `C814F4E933512544BC48EA3E6069143F27213461A8DA021C3983567380A60637`，画面不含账号或个人信息。
+- 对应 Supabase trace `90f9b82c-4e8e-4721-903d-22dcaf8e846d` 为 `completed`、`error_code=null`、`duration_ms=11255`、`ttft_ms=7857`、input/output tokens `4719/1108`、tool `searchAvailableCabins`、tool errors `0`、model `gemini-3.6-flash`。本次是真实 Production 浏览器/模型/数据库工具证据，不是 fixture。
+- 员工验收前只读统计 `auth.users` 的 `raw_app_meta_data.role`：仅 `none=1`，没有 `admin` 或 `staff`。候选合成订单已确认存在，例如 Booking `699` 含坚果过敏留言且 `internalNote` 为空；在创建最小权限演示身份前不触发 Briefing/Copilot 写入。
+- 本批次未填写三次人工计时表：自动浏览器验证不等同于真人五分钟演练；未创建账号、未写入角色、未触发审批、未启用 Cron。
 
 ### 2026-09-26 — 现有 Vercel 项目部署通道复核
 
