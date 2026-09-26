@@ -8,9 +8,9 @@
 - 最后更新：2026-09-26（Asia/Shanghai）。
 - 当前阶段：Feature06「作品集与简历交付」。
 - 当前状态：替代规范 reviewer 最终结论为 ✅ PASS；Feature06 进入人类验证阶段，质量审查尚未启动。用户已明确 Feature05 已验收并授权转入 Feature06；Feature05 旧记录中“最终代码质量审查进行中”是当时的历史中断状态，本文件没有补造该阶段 reviewer 结论。
-- 当前执行项：真实 AI 三段式验收已开始。第一段 Guest Production 已用隔离浏览器完成真实 Concierge → `searchAvailableCabins` → 推荐卡 → **Adopt plan** → `/cabins/3#reservation` 预填链路，Supabase run `90f9b82c-4e8e-4721-903d-22dcaf8e846d` 为 `completed`。第二、三段员工验收尚未开始。
-- 下一步：在隔离 Supabase Demo Project 创建/核验两个邮箱密码演示身份，并仅通过受信路径设置 `app_metadata.role=admin` 的 `DEMO_ADMIN` 与 `app_metadata.role=staff` 的 `DEMO_STAFF`；随后分别执行 Briefing 与 Copilot Reject/Approve 生产验收。
-- 当前阻塞：Supabase Auth 只读统计显示当前仅 1 个 `app_metadata.role=none` 用户，`admin=0`、`staff=0`；没有可用 `DEMO_ADMIN`/`DEMO_STAFF`，且仓库/聊天不得保存演示账号密码。需用户在 Supabase Auth Dashboard 创建并自行保管两个账号凭据后才能继续员工端登录验收。Cron 启用态、录屏、三次计时和陌生读者验证仍待人工。
+- 当前执行项：真实 AI 三段式验收已开始。第一段 Guest Production 已完成；员工验收所需的 `DEMO_ADMIN` 与 `DEMO_STAFF` 已由用户创建，并分别通过受信 `app_metadata.role` 设置为 `admin` 与 `staff`。第二段 Briefing 与第三段 Copilot Reject/Approve 尚未执行。
+- 下一步：用户以全新会话登录 Staff Production 的 `DEMO_ADMIN`，使用合成 Booking `699` 完成 admin-only Briefing 验收；随后退出并以 `DEMO_STAFF` 登录，完成 Copilot 只读查询、写入草稿拒绝/批准及数据库副作用核验。
+- 当前阻塞：角色准备已解除阻塞；员工端登录仍需要用户在浏览器中自行输入并保管密码，自动化不得读取或代填凭据。Cron 启用态、录屏、三次计时和陌生读者验证仍待人工。
 - 正在运行的进程/测试：没有构建或测试仍在运行。Guest 修复后的完整 `npm run check` 通过（41 files / 530 tests、typecheck、lint、production build）；仅保留 4 条既有 `<img>` warning 和 Windows webpack cache rename warning。Staff 仓库 smoke 本轮仍受本机终端 TLS 链路 `fetch failed`。
 - 安全边界：GitHub 发布、隔离 Supabase 写入和 Guest 首次 Vercel 发布已完成；任何跨平台 secret 传输都必须有明确授权，且不把 secret、密码和真实邮箱写入 Git、日志或本文件。不重跑付费 live eval；Cron 继续保持失败关闭。
 
@@ -71,6 +71,14 @@ Feature06 开始前已经存在的 Feature05 改动属于用户资产；本阶�
 - 双端已有真实 production URL；Guest 仓库 smoke 已通过，Staff 已有浏览器生产验证，但 Staff 仓库 smoke 本轮受本机 TLS 链路阻塞，不能登记为脚本通过。仍没有可公开演示账号、录屏或三次真人计时证据。
 
 ## 变更日志
+
+### 2026-09-26 — 员工验收身份安全配置完成
+
+- 用户在隔离 Demo Project 的 Supabase Auth Dashboard 创建并自行保管两个邮箱密码账号；本文仅使用 `DEMO_ADMIN` 与 `DEMO_STAFF` 代称，不记录邮箱或密码。
+- 写入前以创建检查点进行只读核验：两个目标身份各恰好 1 个，均在检查点之后创建且已确认；同期新增用户总数恰好为 2，没有意外新增用户、既有授权角色或位于 `user_metadata` 的角色字段。
+- 在单一事务与严格行数保护下，将 `DEMO_ADMIN` 的受信 `app_metadata.role` 设置为 `admin`，将 `DEMO_STAFF` 设置为 `staff`；任何前置条件或更新行数不符都会整体回滚。
+- 写入后再次独立核验：两个身份的角色分别为 `admin`/`staff`，邮箱均已确认，授权字段均不在用户可修改的 `user_metadata`。没有读取、修改或记录密码。
+- 新角色只会出现在新签发的会话声明中；后续验收必须退出旧会话并重新登录。尚未触发 Briefing、Copilot 草稿/审批、订单写入或 Cron。
 
 ### 2026-09-26 — 三段式人工验收启动：Guest 生产链路通过
 
