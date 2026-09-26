@@ -5,13 +5,13 @@
 
 ## 当前接续点
 
-- 最后更新：2026-09-24（Asia/Shanghai）。
+- 最后更新：2026-09-26（Asia/Shanghai）。
 - 当前阶段：Feature06「作品集与简历交付」。
 - 当前状态：替代规范 reviewer 最终结论为 ✅ PASS；Feature06 进入人类验证阶段，质量审查尚未启动。用户已明确 Feature05 已验收并授权转入 Feature06；Feature05 旧记录中“最终代码质量审查进行中”是当时的历史中断状态，本文件没有补造该阶段 reviewer 结论。
-- 当前执行项：Guest/BFF 与 Staff/Admin 已统一发布到同一 Vercel Hobby 账户下的两个独立 Project。Staff production 为 [`https://the-wild-oasis-ai.vercel.app`](https://the-wild-oasis-ai.vercel.app)，三项浏览器安全变量已写入 Production；Guest production 为 [`https://the-wild-oasis-website-ai.vercel.app`](https://the-wild-oasis-website-ai.vercel.app)，`AI_ADMIN_ORIGIN` 已回填 Staff exact origin。两次重新部署均为 `Ready`，Staff-origin 到 BFF 的 CORS 预检返回 `204`。
-- 下一步：取得并安全配置 `GOOGLE_GENERATIVE_AI_API_KEY` 后执行真实 AI 三段式人工验收；随后按 Runbook 临时启用、手动验证并决定是否保持 Demo reset Cron，创建/核验最小权限 Staff 演示身份，再完成录屏、三次计时和陌生读者验证。
-- 当前阻塞：`GOOGLE_GENERATIVE_AI_API_KEY` 尚未提供；Staff 源码提交 `6cb374e` 与本轮文档更新因终端 TLS connection reset 暂未推送。Vercel 项目使用 Vercel Drop，尚未建立 GitHub 自动部署连接。
-- 正在运行的进程/测试：没有构建或测试仍在运行。Staff Vercel 配置迁移后的完整 `check`、`docs:check` 与 JSON 校验已通过；Staff 仓库 smoke 本轮因本机终端 TLS 链路 `fetch failed`，浏览器已独立确认生产根路径 `200`、深链回退、安全头和构建变量生效。
+- 当前执行项：Guest/BFF 与 Staff/Admin 已统一发布到同一 Vercel Hobby 账户下的两个独立 Project。`GOOGLE_GENERATIVE_AI_API_KEY` 已写入 Guest Production；真实 run `c08e6a9f-8676-4b27-8ed9-469e4c7142cc` 使用 `gemini-3.6-flash` 完成并调用 `searchHotelPolicies`。跨区域限流修复已作为 Guest commit `7376c1d` 推送到当前新仓库 `notjustkoala/the-wild-oasis-website-ai` 的 `main`，但 Vercel 尚未连接该仓库，所以 Production 仍是旧 deployment。
+- 下一步：在 Vercel 项目左侧 `Connect` 连接 `notjustkoala/the-wild-oasis-website-ai`，让 `main@7376c1d` 部署到 Production；确认 `sin1` 执行区域后复测生产 AI。随后执行真实 AI 三段式人工验收，再按 Runbook 临时启用、手动验证并决定是否保持 Demo reset Cron，创建/核验最小权限 Staff 演示身份，完成录屏、三次计时和陌生读者验证。
+- 当前阻塞：仅剩当前 Vercel Project 的 Git 连接/Production deployment。Dashboard 不能把本地目录上传到现有项目；CLI 直连及本机代理均在 Vercel API TLS 阶段失败；浏览器控制扩展缺少运行组件。修复源码已经到达正确的新 GitHub `origin/main`，保留为 `upstream` 的旧仓库未被写入。
+- 正在运行的进程/测试：没有构建或测试仍在运行。Guest 修复后的完整 `npm run check` 通过（41 files / 530 tests、typecheck、lint、production build）；仅保留 4 条既有 `<img>` warning 和 Windows webpack cache rename warning。Staff 仓库 smoke 本轮仍受本机终端 TLS 链路 `fetch failed`。
 - 安全边界：GitHub 发布、隔离 Supabase 写入和 Guest 首次 Vercel 发布已完成；任何跨平台 secret 传输都必须有明确授权，且不把 secret、密码和真实邮箱写入 Git、日志或本文件。不重跑付费 live eval；Cron 继续保持失败关闭。
 
 ## 项目与基线
@@ -71,6 +71,26 @@ Feature06 开始前已经存在的 Feature05 改动属于用户资产；本阶�
 - 双端已有真实 production URL；Guest 仓库 smoke 已通过，Staff 已有浏览器生产验证，但 Staff 仓库 smoke 本轮受本机 TLS 链路阻塞，不能登记为脚本通过。仍没有可公开演示账号、录屏或三次真人计时证据。
 
 ## 变更日志
+
+### 2026-09-26 — 现有 Vercel 项目部署通道复核
+
+- 用户截图确认目标项目 `the-wild-oasis-website-ai` 的 Deployments 页面只显示现有 Production deployments，最新 `4jeguUq2E` 为旧 deployment 的 redeploy，并未包含本地可靠性修复；页面没有本地目录上传入口。
+- 依据 Vercel 官方文档复核：Dashboard 的 Create Deployment 只接受已连接 Git 仓库的 branch/commit reference；Vercel Drop 每次创建新 Project。因此清洁上传目录不能直接覆盖当前 Project，继续使用 Drop 会产生第三个项目，不符合双端各一个项目的既定结构。
+- 缓存 Vercel CLI `59.25.0` 通过既有依赖恢复启动，但临时配置未登录；直连登录返回 `fetch failed`，显式启用 Node 环境代理后通过 `127.0.0.1:7890` 仍返回 `ECONNRESET`，`curl` 对 `7890`/`7897` 的 Vercel API TLS 探测同样失败，未创建 deployment。
+- Chrome 控制扩展因缺少 browser runtime 模块无法连接；Windows Computer Use 的安全规则禁止用 GUI 自动化终端，因此没有绕过浏览器或认证安全边界。
+- Git 状态确认 Guest 当前 `origin=https://github.com/notjustkoala/the-wild-oasis-website-ai.git` 是 9 月 22 日新建的重开发仓库，旧 Guest 仓库为 `upstream=https://github.com/notjustkoala/the-wild-oasis-video.git`；Staff 同理，当前 `origin` 为新仓库，旧项目保留为 `upstream/the-wild-oasis`。后续允许发布当前 `origin/main`，不得 push 到 `upstream`。
+- Guest 目标测试 16/16、TypeScript 与 `git diff --check` 再次通过；创建 commit `7376c1d fix: stabilize AI rate limiting across regions`。默认 `7890` 与单次 `7897` push 均失败，单次清空 Git 代理后直连成功发布到新仓库 `origin/main`；未修改全局代理配置。
+- 本节不把修复写成生产通过；需在当前 Vercel Project 连接新 Guest 仓库并完成 Production deployment 后再复测。
+
+### 2026-09-25 — 生产 Gemini 配置验证与跨区域限流超时修复
+
+- 用户在 Guest Vercel Production 配置 `GOOGLE_GENERATIVE_AI_API_KEY` 并重新部署。真实 `/api/ai/concierge` 请求不再返回 configuration 错误，证明变量进入 runtime。
+- 首个真实请求 `3a3943bc-30df-4dba-ab4a-c66b46b0b19e` 返回 `503`；Supabase `ai_runs` 记录为 `store-unavailable`、`duration_ms=1515`、无模型 token/tool，证明失败发生在模型调用前的限流存储截止时间。
+- 同一批次后续真实请求 `c08e6a9f-8676-4b27-8ed9-469e4c7142cc` 状态为 `completed`，模型 `gemini-3.6-flash`，输入/输出 token 为 `2679/470`，调用 `searchHotelPolicies`；因此 Google key、模型权限、Supabase secret 与 RPC 权限均已实际验证。
+- Vercel 请求日志显示 Function 执行于美国 `iad1`，Supabase Demo Project 位于新加坡 `ap-southeast-1`；Supabase edge log 中 `consume_ai_rate_limit` 为 `200`、`ai_runs` insert 为 `201`，排除 401/403。根因为跨区域冷请求偶发超过原 1.5/1.6 秒 fail-closed 窗口。
+- Guest 本地修复：`vercel.json` 设置 Functions 主区域 `sin1`；限流 RPC/guard 截止时间调整为 `4500/5000 ms`，继续保持存储不可用时失败关闭。针对性 16 tests、TypeScript、JSON 区域检查与完整 `npm run check`（41 files / 530 tests / production build）通过。
+- 自动部署未执行：缓存 CLI 缺少 `execa`，在工作区临时安装锁定 `vercel@59.25.0` 又连续约 90 秒无输出，已终止且未创建 deployment。生成清洁上传目录 `D:/working/code/vercel-upload-guest-20260925` 与压缩包 `D:/working/code/vercel-upload-guest-20260925.zip`（137 files，SHA-256 `39EFE53160AC6B277225E2060F1C771BC3CEAC3CBC6F4D485E934D4CA4203FDF`）；扫描确认不含 `.env*`、`.git`、`.vercel`、`node_modules`、`.next`、tests 或 Supabase 文件。
+- 本节不把本地修复写成生产通过；仍需重新部署后确认 production Function 路由到 `sin1`，并完成一次无 `store-unavailable` 的真实 AI 响应。
 
 ### 2026-09-24 — Staff 部署平台统一为 Vercel
 

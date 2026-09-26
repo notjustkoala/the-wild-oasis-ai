@@ -2,7 +2,7 @@
 
 ## 当前发布状态
 
-截至 2026-09-24，两个源码仓库已发布，隔离 Supabase Demo Project 已完成迁移、seed、Storage 图片与 rollback-only SQL 验证。Guest/BFF 与 Staff/Admin 已统一发布为同一 Vercel Hobby 账户下的两个独立 Project；Staff 三项浏览器安全变量和 Guest `AI_ADMIN_ORIGIN` 已写入 Production 并重新部署，两端状态均为 `Ready`。Guest 仓库 production smoke、Staff 浏览器生产验证、SPA 深链、安全响应头与 Staff-origin CORS 预检已经通过；Staff 仓库 smoke 本轮受本机终端 TLS 链路阻塞。Google OAuth 真实登录和 Profile 已验收；模型凭据、Staff 演示身份、Cron 启用态和完整 AI 人工路径仍待完成。
+截至 2026-09-25，两个源码仓库已发布，隔离 Supabase Demo Project 已完成迁移、seed、Storage 图片与 rollback-only SQL 验证。Guest/BFF 与 Staff/Admin 已统一发布为同一 Vercel Hobby 账户下的两个独立 Project；Staff 三项浏览器安全变量和 Guest `AI_ADMIN_ORIGIN`、Google 模型凭据已写入 Production。Google OAuth 登录、Profile 及一次真实 `gemini-3.6-flash` 政策检索 run 已验证。Guest 正待部署 `sin1` Functions 区域和限流存储超时修复；Staff 演示身份、Cron 启用态和完整 AI 人工路径仍待完成。
 
 | Surface | 建议平台 | 目标域名角色 | 实际 URL |
 | --- | --- | --- | --- |
@@ -25,6 +25,7 @@
 - Supabase：`SUPABASE_URL`、`SUPABASE_PUBLISHABLE_KEY`、`SUPABASE_SECRET_KEY`
 - Auth：`NEXTAUTH_SECRET`、OAuth provider 变量、`AUTH_TRUST_HOST`
 - AI：`AI_PROVIDER` 和对应 provider key；可选模型覆盖
+- Region：Guest `vercel.json` 将 Functions 主区域固定为 `sin1`，靠近位于新加坡 `ap-southeast-1` 的 Demo Project；不要把访问者入口区域与函数执行区域混为一谈
 - 双端绑定：`AI_ADMIN_ORIGIN` 必须是 Staff 的精确 HTTPS origin；需要多个明确部署时用逗号分隔，不能用 `*`
 - Observability：稳定的 `AI_OBSERVABILITY_SECRET`
 - Demo reset：`DEMO_RESET_ENABLED=false` 默认关闭；独立随机
