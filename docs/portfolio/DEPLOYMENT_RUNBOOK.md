@@ -2,7 +2,7 @@
 
 ## 当前发布状态
 
-截至 2026-09-25，两个源码仓库已发布，隔离 Supabase Demo Project 已完成迁移、seed、Storage 图片与 rollback-only SQL 验证。Guest/BFF 与 Staff/Admin 已统一发布为同一 Vercel Hobby 账户下的两个独立 Project；Staff 三项浏览器安全变量和 Guest `AI_ADMIN_ORIGIN`、Google 模型凭据已写入 Production。Google OAuth 登录、Profile 及一次真实 `gemini-3.6-flash` 政策检索 run 已验证。Guest 正待部署 `sin1` Functions 区域和限流存储超时修复；Staff 演示身份、Cron 启用态和完整 AI 人工路径仍待完成。
+截至 2026-09-26，两个源码仓库已发布，隔离 Supabase Demo Project 已完成迁移、seed、Storage 图片与 rollback-only SQL 验证。Guest/BFF 与 Staff/Admin 已统一发布为同一 Vercel Hobby 账户下的两个独立 Project；Staff 三项浏览器安全变量和 Guest `AI_ADMIN_ORIGIN`、Google 模型凭据已写入 Production。Google OAuth 登录、Profile 与真实 `gemini-3.6-flash` 政策检索已验证。Guest Project 已连接 GitHub 新仓库并部署 `sin1` Functions 区域和限流存储超时修复；生产请求返回 `200`，`X-Vercel-Id` 显示 Function 在 `sin1` 执行，对应 Supabase run 为 `completed` 且无 error/tool error。Staff 演示身份、Cron 启用态和完整 AI 人工路径仍待完成。
 
 | Surface | 建议平台 | 目标域名角色 | 实际 URL |
 | --- | --- | --- | --- |
