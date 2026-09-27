@@ -5,12 +5,12 @@
 
 ## 当前接续点
 
-- 最后更新：2026-09-26（Asia/Shanghai）。
+- 最后更新：2026-09-27（Asia/Shanghai）。
 - 当前阶段：Feature06「作品集与简历交付」。
 - 当前状态：替代规范 reviewer 最终结论为 ✅ PASS；Feature06 进入人类验证阶段，质量审查尚未启动。用户已明确 Feature05 已验收并授权转入 Feature06；Feature05 旧记录中“最终代码质量审查进行中”是当时的历史中断状态，本文件没有补造该阶段 reviewer 结论。
-- 当前执行项：真实 AI 三段式验收已开始。第一段 Guest Production 已完成；员工验收所需的 `DEMO_ADMIN` 与 `DEMO_STAFF` 已由用户创建，并分别通过受信 `app_metadata.role` 设置为 `admin` 与 `staff`。第二段 Briefing 与第三段 Copilot Reject/Approve 尚未执行。
-- 下一步：用户以全新会话登录 Staff Production 的 `DEMO_ADMIN`，使用合成 Booking `699` 完成 admin-only Briefing 验收；随后退出并以 `DEMO_STAFF` 登录，完成 Copilot 只读查询、写入草稿拒绝/批准及数据库副作用核验。
-- 当前阻塞：角色准备已解除阻塞；员工端登录仍需要用户在浏览器中自行输入并保管密码，自动化不得读取或代填凭据。Cron 启用态、录屏、三次计时和陌生读者验证仍待人工。
+- 当前执行项：真实 AI 三段式验收的 Guest Production 与 admin-only Staff Briefing 已通过。Booking `699` 的真实 Briefing 成功生成并保存人工复核，订单本身未改变；第三段 `DEMO_STAFF` Copilot 只读查询与 Reject/Approve 尚未执行。
+- 下一步：用户退出 `DEMO_ADMIN` 并以全新会话登录 `DEMO_STAFF`，先执行 Copilot 经营只读查询，再以 Booking `699` 完成写入草稿 Reject/Approve 与数据库副作用核验。
+- 当前阻塞：Briefing 已解除阻塞；切换到 `DEMO_STAFF` 仍需用户在浏览器中自行输入并保管密码，自动化不得读取或代填凭据。Cron 启用态、录屏、三次计时和陌生读者验证仍待人工。
 - 正在运行的进程/测试：没有构建或测试仍在运行。Guest 修复后的完整 `npm run check` 通过（41 files / 530 tests、typecheck、lint、production build）；仅保留 4 条既有 `<img>` warning 和 Windows webpack cache rename warning。Staff 仓库 smoke 本轮仍受本机终端 TLS 链路 `fetch failed`。
 - 安全边界：GitHub 发布、隔离 Supabase 写入和 Guest 首次 Vercel 发布已完成；任何跨平台 secret 传输都必须有明确授权，且不把 secret、密码和真实邮箱写入 Git、日志或本文件。不重跑付费 live eval；Cron 继续保持失败关闭。
 
@@ -71,6 +71,16 @@ Feature06 开始前已经存在的 Feature05 改动属于用户资产；本阶�
 - 双端已有真实 production URL；Guest 仓库 smoke 已通过，Staff 已有浏览器生产验证，但 Staff 仓库 smoke 本轮受本机 TLS 链路阻塞，不能登记为脚本通过。仍没有可公开演示账号、录屏或三次真人计时证据。
 
 ## 变更日志
+
+### 2026-09-27 — Staff Production admin-only Briefing 验收通过
+
+- 用户以全新 `DEMO_ADMIN` 会话打开 Staff Production 的合成 Booking `699`；页面可读取订单，原始坚果过敏留言可见，生成前 `AI risk Briefing` 为 `missing`。
+- 生成前数据库基线确认：订单状态为 `unconfirmed`、`internalNote` 为空、`booking_ai_insights` 为 0 条，订单行 MD5 校验值为 `ace10326076edfe566905c37c7d53121`。
+- 单次 **Generate Briefing** 真实生成成功：`severity=high`、标签 `food-allergy`、2 条 action、confidence `0.98`。持久化 insight 为 `succeeded`、`attempt_count=1`、generation token 已清除、无 failure；模型 `gemini-3.6-flash`，prompt `booking-risk-v1`。
+- 对应 trace `71ed8d8f-e4a5-4576-8649-e1cd55f458b1` 为 `completed`、`error_code=null`、`duration_ms=4984`、input/output tokens `130/695`、tool errors `0`。这是 Staff Production 真实模型与数据库证据，不是 fixture。
+- 用户将结论保存为 `partially-correct`，纠正标签保留 `food-allergy`，并记录不含个人信息的人工处理说明；数据库复核 `reviewed_at` 与 `reviewer_feedback` 已持久化。
+- 保存后 Booking `699` 仍为 `unconfirmed`、`internalNote` 为空，订单行 MD5 校验值保持不变，证明 Briefing 与人工复核没有修改订单业务字段。
+- UI 没有显示瞬时成功 Toast，但页面立即出现 **Saved employee review** 持久化回显，刷新语义与数据库结果一致；登记为非阻塞 UX 观察，不误报为保存失败。未点击 Reanalyze、Check in 或 Delete booking。
 
 ### 2026-09-26 — 员工验收身份安全配置完成
 
