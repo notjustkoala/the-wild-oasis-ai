@@ -8,9 +8,9 @@
 - 最后更新：2026-09-27（Asia/Shanghai）。
 - 当前阶段：Feature06「作品集与简历交付」。
 - 当前状态：替代规范 reviewer 最终结论为 ✅ PASS；Feature06 进入人类验证阶段，质量审查尚未启动。用户已明确 Feature05 已验收并授权转入 Feature06；Feature05 旧记录中“最终代码质量审查进行中”是当时的历史中断状态，本文件没有补造该阶段 reviewer 结论。
-- 当前执行项：真实 AI 三段式验收的 Guest Production 与 admin-only Staff Briefing 已通过。Booking `699` 的真实 Briefing 成功生成并保存人工复核，订单本身未改变；第三段 `DEMO_STAFF` Copilot 只读查询与 Reject/Approve 尚未执行。
-- 下一步：用户退出 `DEMO_ADMIN` 并以全新会话登录 `DEMO_STAFF`，先执行 Copilot 经营只读查询，再以 Booking `699` 完成写入草稿 Reject/Approve 与数据库副作用核验。
-- 当前阻塞：Briefing 已解除阻塞；切换到 `DEMO_STAFF` 仍需用户在浏览器中自行输入并保管密码，自动化不得读取或代填凭据。Cron 启用态、录屏、三次计时和陌生读者验证仍待人工。
+- 当前执行项：真实 AI 三段式验收的 Guest Production 与 admin-only Staff Briefing 已通过；`DEMO_STAFF` Copilot 只读工具链已在受控中文重试中完成。首次自然中文被隐私语法错误降级，成功结果的抽屉 UI 仍有原始 Markdown、重复空状态和信息密度问题；Reject/Approve 尚未执行。
+- 下一步：继续使用当前 `DEMO_STAFF` 会话，以 Booking `699` 完成写入草稿 Reject、核验零订单副作用，再重新起草并 Approve，核验仅 `internalNote` 改变；完成验收后修复 Copilot 中文安全语法与结果抽屉可读性。
+- 当前阻塞：Copilot 只读链路不再阻塞；写入审批仍需用户在浏览器中执行明确的 Reject/Approve。新增的中文自然语法与抽屉 UI 缺陷待实现修复。Cron 启用态、录屏、三次计时和陌生读者验证仍待人工。
 - 正在运行的进程/测试：没有构建或测试仍在运行。Guest 修复后的完整 `npm run check` 通过（41 files / 530 tests、typecheck、lint、production build）；仅保留 4 条既有 `<img>` warning 和 Windows webpack cache rename warning。Staff 仓库 smoke 本轮仍受本机终端 TLS 链路 `fetch failed`。
 - 安全边界：GitHub 发布、隔离 Supabase 写入和 Guest 首次 Vercel 发布已完成；任何跨平台 secret 传输都必须有明确授权，且不把 secret、密码和真实邮箱写入 Git、日志或本文件。不重跑付费 live eval；Cron 继续保持失败关闭。
 
@@ -61,6 +61,7 @@ Feature06 开始前已经存在的 Feature05 改动属于用户资产；本阶�
 | F06-R2 | 安全定时演示数据恢复链 | 已完成（Cron 启用态待验收） | 固定 provenance、私有 baseline、service-only RPC、默认关闭 Cron route 与 SQL/TS 测试已落盘；隔离项目 rollback-only SQL 已通过 |
 | F06-R3 | 独立仓库公开链接稳定化 | 已完成 | 两个独立 GitHub origin 已发布，跨 sibling 文档链接使用固定 `main` 绝对 URL 并通过检查 |
 | F06-R4 | Sequence 权限与 migration 初始化顺序 | 已完成（本地范围） | service_role 获得 `setval` 所需 UPDATE；SQL/合约断言；所有 versioned migrations 按文件名应用且不跳过中间迁移 |
+| F06-R5 | Copilot 中文安全语法与结果抽屉可读性 | 待修复 | 常用自然中文经营查询不被错误降级；模型 Markdown 不再原样暴露；正文、工具轨迹、空结果与结构化卡片分区清晰且不重复 |
 
 ## 已知证据边界
 
@@ -71,6 +72,14 @@ Feature06 开始前已经存在的 Feature05 改动属于用户资产；本阶�
 - 双端已有真实 production URL；Guest 仓库 smoke 已通过，Staff 已有浏览器生产验证，但 Staff 仓库 smoke 本轮受本机 TLS 链路阻塞，不能登记为脚本通过。仍没有可公开演示账号、录屏或三次真人计时证据。
 
 ## 变更日志
+
+### 2026-09-27 — Staff Copilot 只读链路通过并发现生产 UX/中文缺陷
+
+- `DEMO_STAFF` 首次发送自然中文经营问题“对比本月入住相关订单和收入，并列出需要关注的订单。”；Production 返回通用 bookingId 隐私说明，没有 KPI、卡片或工具轨迹。trace `e0e77de3-2c87-4c5f-a226-3325785e7948` 虽为 `completed`，但 `tool_names=[]`、`duration_ms=5610`、input/output tokens `1596/441`。
+- 代码诊断确认不是模型中文能力、员工权限或数据库错误：隐私清洗器的 CJK 安全语法未包含“对比、入住相关、并列出、需要关注”等常用表达，因失败关闭把完整问题替换为 numeric bookingId fallback，模型从未看到原问题。
+- 使用白名单内的受控中文“请查本月到店订单、收入统计和高风险订单。”单次重试成功。trace `7d0568d4-0cca-45d6-a961-dfa5f40bdb96` 为 `completed`、`error_code=null`、`duration_ms=9780`、input/output tokens `3904/1060`，依次调用 `getArrivals`、`getBookingMetrics`、`getBookingRisks`，tool errors `0`。
+- 本月口径返回 0 到店、0 booking metrics/revenue 与 0 高风险订单；这与当前合成数据时间窗一致。Booking `699` 的 `internalNote`、订单行 MD5、审批数与审计数均保持基线，证明只读查询无业务写入。
+- 用户截图发现 Production 抽屉可读性不足：模型 Markdown 作为普通段落原样显示，长正文缺少排版；模型摘要、工具轨迹与结构化空结果重复；48rem 窄抽屉信息密度过高。登记 F06-R5 为验收后必须修复，不把工具链通过误写成 UI 通过。
 
 ### 2026-09-27 — Staff Production admin-only Briefing 验收通过
 
