@@ -5,13 +5,20 @@ import PartialResultWarning from "./PartialResultWarning";
 
 const List = styled.ul`
   display: grid;
+  min-width: 0;
   gap: 0.9rem;
 `;
 const Row = styled.li`
   display: grid;
-  grid-template-columns: 11rem minmax(8rem, 1fr) minmax(18rem, auto);
+  min-width: 0;
+  grid-template-columns: minmax(8rem, 11rem) minmax(6rem, 1fr) minmax(16rem, auto);
   align-items: center;
   gap: 1rem;
+
+  @media (max-width: 40rem) {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.6rem;
+  }
 `;
 const Track = styled.span`
   display: block;
@@ -28,9 +35,14 @@ const Bar = styled.span<{ $width: number }>`
 `;
 const Metrics = styled.span`
   display: flex;
+  min-width: 0;
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 0.3rem 0.8rem;
+
+  @media (max-width: 40rem) {
+    justify-content: flex-start;
+  }
 `;
 
 type CabinPerformanceOutput = Extract<OperationsToolOutput, { kind: "cabin-performance" }>;

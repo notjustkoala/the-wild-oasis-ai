@@ -5,7 +5,7 @@ import PartialResultWarning from "./PartialResultWarning";
 
 const Grid = styled.div`
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(14rem, 100%), 1fr));
   gap: 1rem;
 `;
 const Metric = styled.div`

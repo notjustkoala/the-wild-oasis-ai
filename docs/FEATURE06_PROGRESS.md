@@ -7,11 +7,11 @@
 
 - 最后更新：2026-09-28（Asia/Shanghai）。
 - 当前阶段：Feature06「作品集与简历交付」。
-- 当前状态：F06-R5 功能点 1（Copilot 中文安全语法与隐私安全备注 BFF）本地实现完成，最终 spec review 与 quality review 均为 ✅ PASS。用户已明确同意因本地数据库与 Production Demo 不一致，将本功能点人工验收延期到 Guest/BFF 提交并部署到现有 Vercel Production 之后。用户已明确 Feature05 已验收并授权转入 Feature06；Feature05 旧记录中“最终代码质量审查进行中”是当时的历史中断状态，本文件没有补造该阶段 reviewer 结论。
-- 当前执行项：Guest/BFF 已在 8 个文件完成窄范围中文语法、UTC“本月”日期解析、服务端准确备注绑定、one-shot 写工具门禁、安全 `toModelOutput` 与严格单命令边界；真实 AI SDK UI stream 合约验证确认授权 UI 保留准确审批 proposal，而模型上下文不含备注正文或 approvalId。8 个文件仍未提交、未推送，当前 Production 仍运行旧版本，尚未部署本批次修复。
-- 下一步：提交并部署 Guest/BFF 到现有 Vercel Production；部署完成后复用现有 Production Staff 会话，依次验证中文生产原句、Booking `699` Reject、再次 Draft 后 Approve，并核对准确备注、拒绝零副作用、批准只改 `internalNote` 与重复决策幂等。Staff 结果抽屉后续工作仍按 F06-R5 计划继续，不把 BFF 功能点 1 通过写成整个 F06-R5 已完成。
-- 当前阻塞：本地人工验收已按用户决定延期，不再等待临时同步本地 Demo env；当前门槛是先提交并部署尚未发布的 Guest/BFF 8 文件。Production 仍是旧版本，不得把本地 review 或自动化检查写成已部署/生产通过。Staff 本地进度提交 `a95b3e6` 因 GitHub 网络 reset 尚未推送，当前分支较 `origin/main` ahead 1；Cron 启用态、录屏、三次计时和陌生读者验证仍待人工。
-- 正在运行的进程/测试：两个本地 dev server 均已停止，端口 `3000`、`5173` 已释放；没有构建或测试仍在运行。F06-R5 功能点 1 目标测试 3 files / 274 tests 通过；Guest 完整 `npm run check` 通过（41 files / 605 tests、lint、typecheck、production build），单独 typecheck 与 `git diff --check` 通过。仅保留既有 `<img>`、Windows webpack cache rename `EPERM` 与 caniuse-lite 非阻塞提示。Staff 仓库 smoke 本轮仍受本机终端 TLS 链路 `fetch failed`。
+- 当前状态：F06-R5 功能点 1（Copilot 中文安全语法与隐私安全备注 BFF）最终 spec review、quality review 与 Production 人工验收均为 ✅ PASS，功能点 1 已完成。功能点 2（结构化结果抽屉）首轮 spec review 发现的 booking 分类空态问题已由同一 implementer 修复，最终 spec review 为 ✅ PASS，quality review 为 ✅ APPROVED，且没有 Critical/Important 问题；当前双审通过，尚未提交、部署或完成人工验收。
+- 当前执行项：Staff 已加入精确锁定的 `react-markdown@10.1.0` 与受限 Markdown 渲染，完成审批/经营结果优先、重复 booking 空态合并、AI explanation 与技术元数据分层折叠、terminal 审批明显禁用态，以及固定表单和独立滚动区的响应式抽屉。没有改变 BFF/API、Supabase、auth 或审批不可复活行为。
+- 下一步：等待用户确认功能点 2 commit/push，再部署到现有 Staff Production，并在桌面与窄屏完成结构化结果、审批优先、折叠层级、terminal 禁用态和无横向溢出的人工验收。
+- 当前阻塞：Staff/Guest 本地环境仍指向旧开发数据库，且该环境没有 Production Demo 的 staff/admin 账号，无法进行真实本地身份与数据人工验收。沿用用户此前明确同意的安全流程，不复制 Production secret、不临时创建错误环境账号，把人验延期到 quality review、用户确认提交推送及现有 Staff Production 部署之后。Cron 启用态、录屏、三次计时和陌生读者验证仍待人工。
+- 正在运行的进程/测试：没有 dev server 或测试仍在运行。quality reviewer 独立验证目标组件测试 18/18、typecheck、变更 TSX 显式 ESLint、production build 与 `git diff --check` 均通过；此前 Operations fixture E2E 为 7/7，Staff 完整 `npm run check` 为 8 files / 78 tests，lint、typecheck、production build 全部通过。仅保留 React Router v7 future-flag 与 Playwright `NO_COLOR`/`FORCE_COLOR` 非阻塞提示。
 - 安全边界：GitHub 发布、隔离 Supabase 写入和 Guest 首次 Vercel 发布已完成；任何跨平台 secret 传输都必须有明确授权，且不把 secret、密码和真实邮箱写入 Git、日志或本文件。不重跑付费 live eval；Cron 继续保持失败关闭。
 
 ## 项目与基线
@@ -61,7 +61,7 @@ Feature06 开始前已经存在的 Feature05 改动属于用户资产；本阶�
 | F06-R2 | 安全定时演示数据恢复链 | 已完成（Cron 启用态待验收） | 固定 provenance、私有 baseline、service-only RPC、默认关闭 Cron route 与 SQL/TS 测试已落盘；隔离项目 rollback-only SQL 已通过 |
 | F06-R3 | 独立仓库公开链接稳定化 | 已完成 | 两个独立 GitHub origin 已发布，跨 sibling 文档链接使用固定 `main` 绝对 URL 并通过检查 |
 | F06-R4 | Sequence 权限与 migration 初始化顺序 | 已完成（本地范围） | service_role 获得 `setval` 所需 UPDATE；SQL/合约断言；所有 versioned migrations 按文件名应用且不跳过中间迁移 |
-| F06-R5 | Copilot 中文安全语法、隐私安全备注与结果抽屉可读性 | 功能点 1 BFF 实现完成；最终 spec review、quality review ✅ PASS；人工验收延期至提交部署后 | BFF 已证明常用自然中文经营查询不被错误降级、准确备注不进入模型但能进入授权审批 proposal；Guest 8 文件仍未提交未推送，Production 尚未更新；部署后需用现有 Production Staff 会话验证中文查询、Reject、再次 Draft+Approve，并继续完成 Staff 结果抽屉可读性工作 |
+| F06-R5 | Copilot 中文安全语法、隐私安全备注与结果抽屉可读性 | 功能点 1 spec/quality/Production 人验 ✅ PASS；功能点 2 spec ✅ PASS、quality ✅ APPROVED | 中文查询与准确备注审批已通过；Staff 抽屉双审通过且无 Critical/Important，等待用户确认发布及 Staff Production 桌面/窄屏人验 |
 
 ## 已知证据边界
 
@@ -72,6 +72,54 @@ Feature06 开始前已经存在的 Feature05 改动属于用户资产；本阶�
 - 双端已有真实 production URL；Guest 仓库 smoke 已通过，Staff 已有浏览器生产验证，但 Staff 仓库 smoke 本轮受本机 TLS 链路阻塞，不能登记为脚本通过。仍没有可公开演示账号、录屏或三次真人计时证据。
 
 ## 变更日志
+
+### 2026-09-28 — F06-R5 功能点 2 quality review 通过
+
+- 独立 quality reviewer 最终结论为 ✅ APPROVED，没有 Critical 或 Important 问题。功能点 2 现已同时通过最终 spec review 与 quality review。
+- 独立验证证据：目标组件测试 18/18、typecheck、对本轮变更 TSX 的显式 ESLint、production build 与 `git diff --check` 均通过；本节仅记录 reviewer 已执行的结果，没有在此文档更新步骤中重跑测试。
+- 三个非阻塞 minor 留作后续优化：textarea 当前允许无限纵向 resize，可考虑增加 `max-height`；E2E 当前直接覆盖 `390px` 窄屏，尚未直接覆盖 `320px` 或超长内容压力 fixture；正式 `npm run lint` 脚本只匹配 JS/JSX，但本轮已额外对变更 TSX 执行显式 ESLint 并通过。
+- 当前代码和文档仍未提交、未推送、未部署。下一步等待用户确认 commit/push，随后部署到现有 Staff Production；Production 桌面与窄屏人工验收仍需在部署后执行，不能用双审或自动化证据替代。
+
+### 2026-09-28 — F06-R5 功能点 2 最终 spec review 通过
+
+- 原 spec reviewer 对 booking 分类空态修复完成复审，最终结论为 ✅ PASS。首轮发现的“任意空 output 导致混合数据场景误报空态”问题已修复：Arrivals 与 Bookings needing attention 分别聚合判空，同类存在数据时不显示该类空态，两类全空时只显示一个合并空态，规范外 `Bookings` 标题已移除。
+- 最新自动化证据保持为：目标组件测试 18/18；Operations fixture E2E 7/7；完整 `npm run check` 为 8 files / 78 tests，lint、typecheck、production build 通过；`git diff --check` 通过。本节记录 reviewer 结论，没有重新运行或虚构新的测试批次。
+- 真实本地人验当前不成立：Staff/Guest 本地配置指向旧开发数据库，且没有 Production Demo staff/admin 身份。按用户此前同意的流程，先执行 quality review；通过后等待用户确认 commit/push，部署到现有 Staff Production，再进行桌面与窄屏人验。不会复制 Production secret 或为旧开发环境临时创建演示账号。
+- 当前功能点 2 代码和文档仍未提交、未推送、未部署；本节不构成 Production 人工验收证据，也没有执行远端数据写入。
+
+### 2026-09-28 — F06-R5 功能点 2 首轮 spec review 分类空态修复
+
+- 首轮 spec review 发现重要问题：原编排器以“任意 booking output 为空”触发全局空态，因此同类或另一业务类别已有数据时仍可能显示错误的 “No matching...” 结论，并新增了规范外的 `Bookings` 标题。
+- 修复后先分别聚合 `Arrivals` 与 `Bookings needing attention`：类别内存在任一数据时只展示数据，不再显示该类空态；类别全部为空时才显示类别空态；两类同时全部为空时只显示一个合并空态，且不再输出 `Bookings` 分组标题。
+- 混合场景中的空 output 不再产生错误业务结论，但其 `truncated` warning 与 Evidence 仍保留；规定的 Arrivals → Bookings needing attention 顺序保持不变。
+- 新增回归覆盖：同类一空一非空、arrivals 空但 attention 非空且顺序正确、两类全部为空只合并一次。目标组件测试 18/18、Operations fixture E2E 7/7、完整 `npm run check` 8 files / 78 tests、lint、typecheck、production build 与 `git diff --check` 均通过。当前等待原 reviewer 复审，不把修复与自动化证据写成 spec PASS。
+
+### 2026-09-28 — F06-R5 功能点 2 本地实现与自动化验证完成
+
+- 精确安装并锁定 React 18 兼容的 `react-markdown@10.1.0`；AI 正文仅允许基础排版元素、忽略原始 HTML、剥离链接和图片节点，并将模型 `h1/h2` 降级为抽屉内 `h3/h4`。结构化结果存在时，AI explanation 默认折叠。
+- 新增结构化结果编排器，固定为审批 → 经营结果 → AI explanation → Data activity → Continue/反馈/reference；KPI 的零值仍展示，多个空 arrivals/risks/details 只形成一条业务空态，Evidence 与 partial warning 仍保留。
+- terminal approval 继续禁止重复决策，同时改为灰色卡片、状态标签和明显 disabled 按钮；准确 note、既有审批 API 和 toast 行为保持不变。
+- 抽屉改为 `100dvh`、最大 `56rem`，header/form 固定，内容独立滚动；KPI、chart、长 ID、长正文和操作按钮都增加窄屏换行/重排，Close 目标尺寸至少 `44x44`。
+- `react-markdown` 改为 response 时按需加载，production build 将其隔离为约 `118.67 kB`（gzip `36.61 kB`）的独立 chunk；最终 build 没有 chunk-size warning。
+- 初始自动化证据：目标组件测试 16/16（分别覆盖 rejected 与 executed terminal 状态）；Operations fixture E2E 7/7，覆盖桌面与 `390x844` 的审批优先、活动折叠、无横向溢出、44px Close、焦点和 Escape；完整 `npm run check` 为 8 files / 76 tests，lint、typecheck、production build 通过；后续 reviewer 修复后的最新证据见上一节。
+- 项目原 `playwright.config.ts` 在本机失败重跑后出现 Vite child teardown 不退出；最终 E2E 使用同一 fixture env 手动启动 Vite，并用临时无 `webServer` 配置运行，命令 exit `0`。临时配置、dev server 与测试生成的旧截图改动均已清理，未把环境 teardown 当成产品通过证据。
+- React 自审确认无请求瀑布或新全局 listener；重型 Markdown 依赖按需分块，派生结构化状态在 render 中计算，焦点/对话框语义和已有 API 边界保持不变。没有提交、推送、部署或 Production 写操作。
+
+### 2026-09-28 — F06-R5 功能点 1 Production 人验通过
+
+- Production Staff 会话中，中文经营查询“对比本月入住相关订单和收入，并列出需要关注的订单。”成功返回，中文请求链路通过。
+- Booking `#699` 的第一次成功 internal note 草稿生成了审批卡，卡片准确显示 note `Follow up on payment before check-in.`，不是 `[redacted]`，证明服务端准确备注绑定能够到达受信审批 UI。
+- 点击 Reject 后，toast 显示 `Draft rejected; no booking field changed.`，审批卡显示 `Decision: rejected`。该 rejected approval 已进入 terminal 状态，不能再被 approve；这是预期的安全行为，不是故障。
+- 使用同一 note 再次 Ask Copilot 创建新的 approval 后，Approve 成功；toast 显示 `Internal note added.`，新审批卡显示 `Decision: executed`。必须新建 approval 才能在 Reject 后 approve，符合审批不可复活与每次决策独立的设计。
+- F06-R5 功能点 1 的 spec review、quality review 与 Production 人工验收均为 ✅ PASS，现标记完成。审批按钮在 terminal 状态下的禁用视觉不够明显，以及抽屉文本/Markdown/结构化内容层次混乱，均纳入功能点 2；当前接续点转入结构化结果抽屉实现。
+
+### 2026-09-28 — F06-R5 Production 人验：中文链路通过，备注草稿请求待诊断
+
+- 在现有 Production Staff 会话中提交“对比本月入住相关订单和收入，并列出需要关注的订单。”后成功返回，说明此前失败的自然中文经营请求链路已通过本轮人工验证。
+- 同一截图再次确认结果抽屉仍存在文本、Markdown 与结构化 UI 混杂、层次混乱的问题；该问题明确留给 F06-R5 功能点 2，不在当前 BFF 功能点 1 中扩张范围。
+- internal note 草稿请求在浏览器显示 `Failed to fetch`，没有出现审批卡；因此 Reject、再次 Draft 与 Approve 均未执行，准确备注与审批副作用尚未获得 Production 人工证据。F06-R5 功能点 1 的 Production 人验当前未通过/未完成，不能用 spec/quality review 或自动化测试替代。
+- 只读诊断确认 Production BFF 预检 `OPTIONS` 返回 `204`，允许 Staff origin、`Authorization` 与 `Content-Type`；未认证 `POST` 返回带 CORS header 与 trace 的 `401`。这排除了静态 CORS 配置错误和路由不可达，但不能解释已认证浏览器请求为何 `Failed to fetch`。
+- Vercel runtime log connector 因 `403` 无法读取对应请求日志；当前等待用户重试 internal note 请求或提供对应浏览器/请求日志，再决定是否需要代码修复。没有执行 Reject/Approve、数据库写入或代码修改。
 
 ### 2026-09-28 — F06-R5 功能点 1 通过质量复审，人工验收延期至 Production 部署后
 
