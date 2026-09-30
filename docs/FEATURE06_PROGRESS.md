@@ -5,13 +5,13 @@
 
 ## 当前接续点
 
-- 最后更新：2026-09-28（Asia/Shanghai）。
+- 最后更新：2026-09-30（Asia/Shanghai）。
 - 当前阶段：Feature06「作品集与简历交付」。
-- 当前状态：F06-R5 功能点 1（Copilot 中文安全语法与隐私安全备注 BFF）最终 spec review、quality review 与 Production 人工验收均为 ✅ PASS，功能点 1 已完成。功能点 2（结构化结果抽屉）首轮 spec review 发现的 booking 分类空态问题已由同一 implementer 修复，最终 spec review 为 ✅ PASS，quality review 为 ✅ APPROVED，且没有 Critical/Important 问题；当前双审通过，尚未提交、部署或完成人工验收。
-- 当前执行项：Staff 已加入精确锁定的 `react-markdown@10.1.0` 与受限 Markdown 渲染，完成审批/经营结果优先、重复 booking 空态合并、AI explanation 与技术元数据分层折叠、terminal 审批明显禁用态，以及固定表单和独立滚动区的响应式抽屉。没有改变 BFF/API、Supabase、auth 或审批不可复活行为。
-- 下一步：等待用户确认功能点 2 commit/push，再部署到现有 Staff Production，并在桌面与窄屏完成结构化结果、审批优先、折叠层级、terminal 禁用态和无横向溢出的人工验收。
-- 当前阻塞：Staff/Guest 本地环境仍指向旧开发数据库，且该环境没有 Production Demo 的 staff/admin 账号，无法进行真实本地身份与数据人工验收。沿用用户此前明确同意的安全流程，不复制 Production secret、不临时创建错误环境账号，把人验延期到 quality review、用户确认提交推送及现有 Staff Production 部署之后。Cron 启用态、录屏、三次计时和陌生读者验证仍待人工。
-- 正在运行的进程/测试：没有 dev server 或测试仍在运行。quality reviewer 独立验证目标组件测试 18/18、typecheck、变更 TSX 显式 ESLint、production build 与 `git diff --check` 均通过；此前 Operations fixture E2E 为 7/7，Staff 完整 `npm run check` 为 8 files / 78 tests，lint、typecheck、production build 全部通过。仅保留 React Router v7 future-flag 与 Playwright `NO_COLOR`/`FORCE_COLOR` 非阻塞提示。
+- 当前状态：F06-R5 结构化经营查询验收点已在第三次 Production 人工复验恢复为 ✅ PASS。相同中文查询成功显示 Summary metrics 与中文 AI explanation，Data activity 中 Booking metrics、Arrival lookup、Booking risk review 三个工具均为 completed；Reference `aec9c64c-8691-4c9f-a362-a43478322b75`。这是该查询链路的恢复证据，不代表 Feature06 全部人工验收已完成。
+- 当前执行项：Guest/BFF deployment `dpl_6zrTEzEGZhAbrcLcYuQ3pANT1KEk` 状态 Ready，正式 Production alias 为 [`https://the-wild-oasis-website-ai.vercel.app`](https://the-wild-oasis-website-ai.vercel.app)。该版本包含窄范围中文 sanitizer/date 闭环、Gemini 3.8 + `maxRetries=4`、Operations `reasoning: low` 与 non-stream generate 80/90/20 timeout；第三次真实 Production 结果证明原结构化经营查询已从先前 generic fallback、503/504 链路恢复。
+- 下一步：继续 Staff 功能点 2 的 Production 桌面与窄屏人工 UI 验收，并处理 Feature06 其余未完成的人工作业；不要把单个结构化经营查询通过扩展为整项 Feature06 完成。
+- 当前阻塞：结构化经营查询验收点当前无阻塞。Staff/Guest 本地环境仍指向旧开发数据库，无法替代其他 Production 身份与数据验收；Cron 启用态、录屏、三次计时和陌生读者验证仍待人工。
+- 正在运行的进程/测试：没有 dev server 或测试仍在运行。Guest/BFF 定向测试 6 files / 309 tests 通过；完整 `npm run check` 为 42 files / 632 tests，lint、typecheck、production build 全部通过，`git diff --check` 通过。仅保留既有 4 个 `<img>` lint warning、caniuse-lite 过期提示与 Windows webpack cache rename `EPERM` 非阻塞 warning。
 - 安全边界：GitHub 发布、隔离 Supabase 写入和 Guest 首次 Vercel 发布已完成；任何跨平台 secret 传输都必须有明确授权，且不把 secret、密码和真实邮箱写入 Git、日志或本文件。不重跑付费 live eval；Cron 继续保持失败关闭。
 
 ## 项目与基线
@@ -61,7 +61,7 @@ Feature06 开始前已经存在的 Feature05 改动属于用户资产；本阶�
 | F06-R2 | 安全定时演示数据恢复链 | 已完成（Cron 启用态待验收） | 固定 provenance、私有 baseline、service-only RPC、默认关闭 Cron route 与 SQL/TS 测试已落盘；隔离项目 rollback-only SQL 已通过 |
 | F06-R3 | 独立仓库公开链接稳定化 | 已完成 | 两个独立 GitHub origin 已发布，跨 sibling 文档链接使用固定 `main` 绝对 URL 并通过检查 |
 | F06-R4 | Sequence 权限与 migration 初始化顺序 | 已完成（本地范围） | service_role 获得 `setval` 所需 UPDATE；SQL/合约断言；所有 versioned migrations 按文件名应用且不跳过中间迁移 |
-| F06-R5 | Copilot 中文安全语法、隐私安全备注与结果抽屉可读性 | 功能点 1 spec/quality/Production 人验 ✅ PASS；功能点 2 spec ✅ PASS、quality ✅ APPROVED | 中文查询与准确备注审批已通过；Staff 抽屉双审通过且无 Critical/Important，等待用户确认发布及 Staff Production 桌面/窄屏人验 |
+| F06-R5 | Copilot 中文安全语法、隐私安全备注与结果抽屉可读性 | 功能点 1 spec/quality/Production 人验 ✅ PASS；功能点 2 spec ✅ PASS、quality ✅ APPROVED、已发布 | 中文查询与准确备注审批已通过；Staff 抽屉已提交、推送并部署 Ready，仍待用户完成 Staff Production 桌面/窄屏人工 UI 验收 |
 
 ## 已知证据边界
 
@@ -72,6 +72,51 @@ Feature06 开始前已经存在的 Feature05 改动属于用户资产；本阶�
 - 双端已有真实 production URL；Guest 仓库 smoke 已通过，Staff 已有浏览器生产验证，但 Staff 仓库 smoke 本轮受本机 TLS 链路阻塞，不能登记为脚本通过。仍没有可公开演示账号、录屏或三次真人计时证据。
 
 ## 变更日志
+
+### 2026-09-30 — 第三次 Production 结构化经营查询复验通过
+
+- Guest/BFF deployment `dpl_6zrTEzEGZhAbrcLcYuQ3pANT1KEk` 已 Ready，正式 Production alias 为 [`https://the-wild-oasis-website-ai.vercel.app`](https://the-wild-oasis-website-ai.vercel.app)。
+- 用户以同一句中文经营查询完成第三次真实 Production 人工复验：界面成功显示 Summary metrics 与中文 AI explanation；Data activity 明确显示 Booking metrics、Arrival lookup、Booking risk review 三个工具全部 completed；Reference 为 `aec9c64c-8691-4c9f-a362-a43478322b75`。
+- 该证据足以把本轮结构化经营查询验收点恢复为 ✅ PASS，并证明此前 sanitizer 降级、provider 503 与 60 秒 step timeout 修复后的端到端路径可用。证据范围仅限此查询链路；Staff 功能点 2 桌面/窄屏 UI、Cron 启用态、录屏、三次计时和陌生读者验证仍未完成，不能宣称 Feature06 全部验收完成。
+
+### 2026-09-30 — Production 第二次复验命中 60 秒 step timeout
+
+- 第二次 Production 人工复验仍未得到结构化经营结果。Reference `fd8064ac-465d-40f4-a6b8-cd5d048d5637`、deployment `dpl_7wpch28xLeDooW3EwZbrU2o3S6RR` 的精确脱敏日志为 `TimeoutError`、diagnostic code=`timeout`、status/retryable=`null`、durationMs=`60011`、HTTP `504`、mode=`generate`；provider `503` 已不再是这次请求的外层最终错误。时长精确对应现有 `CONCIERGE_GENERATE_TIMEOUT.stepMs=60_000`，总截止仍为 90 秒，Vercel route `maxDuration` 为 100 秒。
+- 本地 `ai@7.0.58` 源码确认 ToolLoopAgent 的 `reasoning` 是正式 call setting；non-stream `stepMs` 包住每一步 provider 调用及其有限 retry，而 `totalMs` 独立限制完整 agent。`@ai-sdk/google@4.0.42` 源码确认 Gemini 3+ 会把顶层 `reasoning: low` 映射成 `thinkingConfig.thinkingLevel=low`。据此只为 Operations agent 设置 low reasoning，不改变 booking insight 或 concierge；non-stream generate 调为 80/90/20，stream 继续保持 total/step/firstChunk/chunk/tool = 90/60/60/30/20，`maxRetries=4` 不变。
+- 真实 SDK + MockLanguageModel 虚拟时间契约覆盖两个路径：70 秒首个 provider step 在旧 60 秒点仍未终止，随后完成 metrics/arrivals/risks 三个只读工具；另一条累计路径仍在完整 90 秒 total deadline 终止。测试同时锁定 Operations `reasoning=low`、Concierge 不受影响、generate 80/90/20、stream 配置不变，不执行真实网络或数据库写入。
+- 最新定向 6 files / 309 tests、Guest 全量 42 files / 632 tests、lint、typecheck 与 production build 全部通过；仅有既有非阻塞 warning。该时点本地批次尚未部署，因此本节本身不构成功能恢复证据；后续 deployment `dpl_6zrTEzEGZhAbrcLcYuQ3pANT1KEk` 与第三次人工复验结果见上方记录。
+
+### 2026-09-30 — Production 503 消失，中文聚合经营查询 sanitizer 降级修复
+
+- Production 人工复验提交“请查询2026年9月1日至2026年9月30日的订单、收入、到店情况和高风险订单，并说明统计口径。”，Reference 为 `2e5243a0-1619-4fc7-88cf-5dae86e843dc`。请求不再返回 `503`，证明 Gemini 3.8 + 有限重试修复已生效；但响应是英文 generic booking-ID/privacy capability acknowledgement，没有 metrics、arrivals 或 risks 结构化结果，因此本次人验仍未通过。
+- 真实 sanitizer 黑盒测试先复现完整原句被替换为 `Booking lookup requires a numeric bookingId...`，并逐项证实中文日期、“情况”、“并”、“说明”、“口径”在旧语法下均失败关闭。源码组合检查进一步确认 `请查询` 被较短 `请查` 分支先匹配，最终未消费文本精确为 `询2026年9月1日2026年9月30日情况并说明口径`；这解释了模型为何只能围绕 numeric bookingId 能力作答。
+- 本地最小修复只接受完整 `请查询`、`到店情况`、`并说明`、`统计口径` 以及完整 `YYYY年M月D日` token，不放行任意 Han。两段中文显式日期由服务端验证并规范化为 ISO `from=2026-09-01, to=2026-09-30`；单独“情况 / 并 / 说明 / 口径”、相邻中文姓名、既有 PII/脚本/长度边界继续失败关闭或脱敏。
+- 规格复审指出首版中文日期 token 化仍可能把 invalid day/month、倒序、超 366 天或缺少第二个端点的原文送入 model，只是不给 date hint，因此首轮复审未通过。本地修复现于 note 正文脱敏后、任何 date token 化前检查中文显式日期：只有 `extractExplicitOperationsDateRange` 能验证并规范化的唯一日期对才继续，其余一律返回固定安全 fallback；不扩展单日期语义，也不改变既有 ISO/相对日期行为。新增 sanitizer 与 `readOperationsRequest` 端到端负测覆盖四类非法范围及单日期，并直接构造裁剪点落在中文日期内部的边界，确认不会输出半个日期。该修复仍待重新规格/质量审查、提交、部署及 Production 复验，不能登记为通过。
+- 无网络真实 ToolLoopAgent + 受控模型契约证明，该清洗后的原句能在一个模型步骤调用 `getBookingMetrics`、`getArrivals`、`getBookingRisks`，三个 tool result 均返回；重试、审批、工具副作用和隐私边界未改。现有 operations instructions 已明确聚合经营查询使用 structured tools，测试没有证明需要新增危险的文本驱动 tool forcing，因此 prompt 未改。
+- 截至 sanitizer/date 批次，定向 5 files / 304 tests、Guest 全量 42 files / 630 tests、lint、typecheck 与 production build 全部通过；仅有既有非阻塞 warning。当时 Guest/BFF 共 8 个文件未提交，未推送、未部署；该证据已由上方后续 timeout 批次继续叠加，本节不构成功能恢复证据。
+
+### 2026-09-29 — Gemini 上游 503 确证与有限重试韧性修复
+
+- 已部署的脱敏诊断为 Production Reference `5b790313-f0cd-49de-b1ff-e09ada442a02` 记录：`AI_RetryError`、code=`provider-http`、status=`503`、retryable=`true`、durationMs=`9480`、route=`/api/ai/admin`、mode=`generate`。该证据排除 UI/CORS/数据库/路由，把失败类别确证为 Google Gemini 上游临时 `503`；受控日志不包含用户问题、Authorization、API key、provider 原始 message/body 或 PII，也不足以进一步断言具体过载原因。
+- Google 官方 Gemini troubleshooting 将 `503 UNAVAILABLE` 定义为应重试的临时错误，建议仅对 `429`、`408` 与 `5xx` 使用有最大次数的指数退避；官方模型目录截至 2026-09-29 将 `gemini-3.8-flash` 列为最新稳定 Flash、`gemini-3.6-flash` 列为 previous-generation。来源：[Troubleshooting guide](https://ai.google.dev/gemini-api/docs/troubleshooting)、[Models](https://ai.google.dev/gemini-api/docs/models)。
+- Guest/BFF 本地将 direct Google 默认模型升级为 `gemini-3.8-flash`，不改变 `AI_CONCIERGE_MODEL` 显式覆盖；concierge 与 operations 共享 `CONCIERGE_MODEL_MAX_RETRIES=4`。本地 `ai@7.0.58` 源码确认 retry 使用 SDK 内置指数退避，且仅重试每个 step 的 provider `doGenerate`/`doStream`，在工具调用解析与执行之前；不会以整次 agent 重跑的方式重复工具写入，仍受既有 60 秒 step、90 秒 total timeout 与 request abort 截止。
+- 新增真实 SDK retry 契约测试：两个 agent 都在连续 4 次 retryable provider `503` 后第 5 次 attempt 成功；Operations 在重试期间 booking query 与 RPC 均为 0。默认模型与显式 override 均有覆盖，已有审批、隐私、工具和安全响应测试保持通过。定向 4 files / 238 tests、单独 typecheck、Guest 全量 42 files / 614 tests、lint、typecheck 与 production build 全部通过；仅有既有非阻塞 warning。
+- 本轮 Guest/BFF 修改 4 个既有文件并新增 1 个测试文件，尚未提交、推送或部署。当前仍待审查与部署后用原中文经营查询完成人工复验；本节不构成 Production 恢复证据。
+
+### 2026-09-29 — Production `/api/ai/admin` 503 安全诊断与 generate 超时兼容修复
+
+- Staff Production 验收中文经营查询时，`POST /api/ai/admin` 返回 `503`，request ID 为 `4nl9z-1790684841062-370e5592fe75`；同路由 `OPTIONS` 返回 `204`。Vercel 日志证明请求已进入 Google Generative AI / `gemini-3.6-flash`，并记录 `timeout.firstChunkMs`、`timeout.chunkMs` 不支持非流式 generate 的 warning，但旧 admin route catch 吞掉了真正异常。
+- 核对本地 `ai@7.0.58` 源码与文档后确认：`firstChunkMs` 和 `chunkMs` 仅由 streaming 使用，generate 会记录 unsupported warning 而不会因此抛错。本地修复让非流式 `agent.generate` 保留受支持的 `{ totalMs: 90_000, stepMs: 60_000, toolMs: 20_000 }` 及原有 request abort，只移除两个 streaming-only deadline；stream 继续使用 total/step/first-chunk/chunk/tool 完整配置。当前不能把该 warning 写成 503 根因。
+- admin generation catch 新增 JSON 结构化服务端诊断，字段严格固定为 level/event/route/surface/traceId/mode/errorName/code/status/retryable/durationMs。error name、network/provider 分类均经过白名单或本地枚举映射，provider HTTP status 只接受 `400..599`；不读取或记录 error message、用户问题、Authorization、API key、原始 provider response body、任意 provider code、stack 或 PII。安全属性读取会同时有界遍历 `cause` 与 `lastError`（固定深度与节点上限），跳过 throwing getter/Proxy trap 并阻断 cycle；helper 与 route/logging 外层均有稳定 fallback，客户端仍收到原有安全 503/504 文案与 trace。
+- 对抗测试用含邮箱的用户问题、Bearer token、任意 provider code 与原始 provider body 验证日志和响应均不含这些值；另覆盖 throwing getter、全属性抛错 Proxy、cause/lastError 循环、HTTP status 边界及日志自身失败，并验证 generate 保留 total/step/tool timeout、stream 完整配置不变。最新针对性测试 1 file / 21 tests、单独 typecheck、Guest 全量 41 files / 612 tests、lint、typecheck、production build 与 `git diff --check` 全部通过；仅有既有非阻塞 warning。
+- 本轮涉及 4 个 Guest/BFF 文件（修改 3 个、增加 1 个安全诊断模块）。修复已以 commit `3aaa959`（`fix: diagnose operations generation failures`）由 GitHub 自动部署到 `the-wild-oasis-website-ai` Production，Vercel 状态 Ready、构建约 44 秒；该截图证据只证明部署成功，不构成 503 恢复或根因确认。当前仍待用相同中文经营查询完成 Production 功能复验，若失败再依据新日志定位真实异常；Staff 功能点 2 人工 UI 验收继续保持未完成。
+
+### 2026-09-29 — F06-R5 功能点 2 已提交、推送并部署到 Staff Production
+
+- 功能点 2 已以 commit `990c4d7fbc068fdef0fdf132d406f7d2ccabb687`（`feat: structure Operations Copilot results`）提交并推送。
+- 已部署到现有 Vercel 项目 `chenjz69921-3115s-projects/the-wild-oasis-ai`（projectId `prj_ZF9gnbzFkAuLIWsqSmnHmqLdHXYP`）。Deployment inspect ID/slug 为 `HA39wqKkVmRvSHJ1KFaQYm44Zpy9`，deployment URL 为 `https://the-wild-oasis-qip95gv68-chenjz69921-3115s-projects.vercel.app`，Production alias 为 `https://the-wild-oasis-ai.vercel.app`。
+- Vercel 部署状态为 Ready，构建耗时 33 秒。这是发布状态证据，不是人工 UI 验收证据。
+- Production 桌面与窄屏人工 UI 验收仍待用户完成；在用户实际核对结构化结果层级、审批优先、折叠行为、terminal 禁用态和横向溢出前，不宣称功能点 2 已通过人工验收。
 
 ### 2026-09-28 — F06-R5 功能点 2 quality review 通过
 
