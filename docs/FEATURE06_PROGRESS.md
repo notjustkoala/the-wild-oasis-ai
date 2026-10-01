@@ -5,13 +5,13 @@
 
 ## 当前接续点
 
-- 最后更新：2026-09-30（Asia/Shanghai）。
+- 最后更新：2026-10-01（Asia/Shanghai）。
 - 当前阶段：Feature06「作品集与简历交付」。
-- 当前状态：F06-R5 结构化经营查询验收点已在第三次 Production 人工复验恢复为 ✅ PASS。相同中文查询成功显示 Summary metrics 与中文 AI explanation，Data activity 中 Booking metrics、Arrival lookup、Booking risk review 三个工具均为 completed；Reference `aec9c64c-8691-4c9f-a362-a43478322b75`。这是该查询链路的恢复证据，不代表 Feature06 全部人工验收已完成。
-- 当前执行项：Guest/BFF deployment `dpl_6zrTEzEGZhAbrcLcYuQ3pANT1KEk` 状态 Ready，正式 Production alias 为 [`https://the-wild-oasis-website-ai.vercel.app`](https://the-wild-oasis-website-ai.vercel.app)。该版本包含窄范围中文 sanitizer/date 闭环、Gemini 3.8 + `maxRetries=4`、Operations `reasoning: low` 与 non-stream generate 80/90/20 timeout；第三次真实 Production 结果证明原结构化经营查询已从先前 generic fallback、503/504 链路恢复。
-- 下一步：继续 Staff 功能点 2 的 Production 桌面与窄屏人工 UI 验收，并处理 Feature06 其余未完成的人工作业；不要把单个结构化经营查询通过扩展为整项 Feature06 完成。
-- 当前阻塞：结构化经营查询验收点当前无阻塞。Staff/Guest 本地环境仍指向旧开发数据库，无法替代其他 Production 身份与数据验收；Cron 启用态、录屏、三次计时和陌生读者验证仍待人工。
-- 正在运行的进程/测试：没有 dev server 或测试仍在运行。Guest/BFF 定向测试 6 files / 309 tests 通过；完整 `npm run check` 为 42 files / 632 tests，lint、typecheck、production build 全部通过，`git diff --check` 通过。仅保留既有 4 个 `<img>` lint warning、caniuse-lite 过期提示与 Windows webpack cache rename `EPERM` 非阻塞 warning。
+- 当前状态：F06-R5 功能点 1 的结构化经营查询、严格中文 booking-first 备注审批及 post-tool stop 修复均已完成 Production 人工验收，状态为 ✅ PASS。Deployment `dpl_41cma3wTBSRkFuWJgvbMPT9UiUHC` 为 READY，Production alias 返回 `200`；终检中审批卡在首个工具步骤后直接出现并可成功 Reject，已部署版本不再依赖第二次 provider 调用才能展示已创建的 approval。该结论不扩展为 Feature06 整体完成。
+- 当前执行项：F06-R5 功能点 1 的本轮 Production recovery 已完成。严格 server-bound 备注请求在成功得到 `addBookingInternalNote` tool result 后立即终止 agent loop，trusted proposal/card 保持可见；普通经营查询仍保留多工具调用和后续模型综合。
+- 下一步：继续 Staff 功能点 2 的 Production 桌面与窄屏人工 UI 验收，以及 Cron 启用态、录屏、三次计时和陌生读者验证等 Feature06 后续工作。
+- 当前阻塞：F06-R5 功能点 1 当前无产品阻塞。Staff/Guest 本地环境仍指向旧开发数据库，无法替代其他 Production 身份与数据验收；Feature06 其余人工验收仍待完成。
+- 正在运行的进程/测试：没有 dev server 或测试仍在运行。本批次最新核心目标测试 3 files / 337 tests、扩展目标测试 6 files / 349 tests 均通过；完整 `npm run check` 为 42 files / 672 tests，lint、typecheck、production build 全部通过，Guest/Staff `git diff --check` 通过。仅有既有 4 个 `<img>` lint warning、caniuse-lite 过期提示、Windows webpack cache rename `EPERM` 与本机全局 Git ignore 读取权限提示，均为非阻塞 warning。
 - 安全边界：GitHub 发布、隔离 Supabase 写入和 Guest 首次 Vercel 发布已完成；任何跨平台 secret 传输都必须有明确授权，且不把 secret、密码和真实邮箱写入 Git、日志或本文件。不重跑付费 live eval；Cron 继续保持失败关闭。
 
 ## 项目与基线
@@ -61,7 +61,7 @@ Feature06 开始前已经存在的 Feature05 改动属于用户资产；本阶�
 | F06-R2 | 安全定时演示数据恢复链 | 已完成（Cron 启用态待验收） | 固定 provenance、私有 baseline、service-only RPC、默认关闭 Cron route 与 SQL/TS 测试已落盘；隔离项目 rollback-only SQL 已通过 |
 | F06-R3 | 独立仓库公开链接稳定化 | 已完成 | 两个独立 GitHub origin 已发布，跨 sibling 文档链接使用固定 `main` 绝对 URL 并通过检查 |
 | F06-R4 | Sequence 权限与 migration 初始化顺序 | 已完成（本地范围） | service_role 获得 `setval` 所需 UPDATE；SQL/合约断言；所有 versioned migrations 按文件名应用且不跳过中间迁移 |
-| F06-R5 | Copilot 中文安全语法、隐私安全备注与结果抽屉可读性 | 功能点 1 spec/quality/Production 人验 ✅ PASS；功能点 2 spec ✅ PASS、quality ✅ APPROVED、已发布 | 中文查询与准确备注审批已通过；Staff 抽屉已提交、推送并部署 Ready，仍待用户完成 Staff Production 桌面/窄屏人工 UI 验收 |
+| F06-R5 | Copilot 中文安全语法、隐私安全备注与结果抽屉可读性 | 功能点 1 Production 人验与 post-tool stop 终检 ✅ PASS；功能点 2 spec ✅ PASS、quality ✅ APPROVED、已发布 | 结构化查询、中文备注 Reject → 新建 approval → Approve 及单步返回审批卡均通过；Staff 抽屉仍待 Production 桌面/窄屏人工 UI 验收 |
 
 ## 已知证据边界
 
@@ -72,6 +72,40 @@ Feature06 开始前已经存在的 Feature05 改动属于用户资产；本阶�
 - 双端已有真实 production URL；Guest 仓库 smoke 已通过，Staff 已有浏览器生产验证，但 Staff 仓库 smoke 本轮受本机 TLS 链路阻塞，不能登记为脚本通过。仍没有可公开演示账号、录屏或三次真人计时证据。
 
 ## 变更日志
+
+### 2026-10-01 — post-tool stop 最终 Production 复验通过
+
+- Guest/BFF deployment `dpl_41cma3wTBSRkFuWJgvbMPT9UiUHC` 状态为 READY，正式 Production alias 返回 `200`。
+- Production 终检提交严格命令“为预订 699 起草内部备注：F06-R5 终检——确认审批单步返回。”后，准确审批卡直接出现，没有等待或依赖工具成功后的第二次 provider 综合调用。
+- 点击 **Reject draft** 成功，toast 为 `Draft rejected; no booking field changed.`，审批卡显示 `Decision: rejected`。该结果同时确认审批拒绝仍保持零 booking 字段写入，post-tool stop 没有改变既有审批语义。
+- 这组部署与真实 Production 证据验证 post-tool stop 修复已经上线生效，关闭“pending approval 已持久化但后续 provider `429/503` 使 route 失败、UI 看不到审批卡”的质量缺口。F06-R5 功能点 1 恢复为 ✅ PASS；证据范围不扩展到 Staff 功能点 2 或 Feature06 其他待完成人工验收。
+
+### 2026-10-01 — 备注审批成功后的 post-tool provider 失败窗口修复
+
+- 质量复审发现 Important：严格备注命令的首步 `addBookingInternalNote` 已经通过 RPC 创建 pending approval/audit 后，AI SDK 仍会发起第二次 provider 调用。若第二步遭遇 Gemini `429/503`，admin route 会返回失败，但数据库中已有 UI 未展示的 pending approval；此前 Production 重新提交时出现的 provider 故障使该窗口具有实际风险。质量状态因此重新打开。
+- 核对本地 `ai@7.0.58` 源码确认，`stopWhen` 在工具执行并记录完整 step/tool result 之后、下一次 provider 调用之前评估，generate 与 stream 语义一致。本地新增停止条件只在 server-bound draft 存在且最新 step 成功产出 `addBookingInternalNote` tool result 时触发；失败的工具执行不被当成成功，普通经营查询仍沿用最多 8 steps 并保留 tool 后的模型综合。
+- 真实 SDK generate 测试从两次 provider 调用改为一次，仍断言 RPC 恰好一次、raw proposal 包含准确 note、模型输入不含准确 note；新增模拟第二次 provider `503` 的回归测试，证明第二次调用不会发生且结果成功保留 proposal。真实 UI stream 测试同样只调用 provider 一次，配置的第二次 `429` 不可达，HTTP response 为 `200` 且 `tool-output-available` 仍含 trusted approval card payload。既有三工具经营查询明确继续执行第二次模型综合调用。
+- 最新核心目标测试 3 files / 337 tests、扩展目标测试 6 files / 349 tests、完整 `npm run check` 42 files / 672 tests、lint、typecheck 与 production build 全部通过。该时点修复尚未提交、推送或部署；后续 deployment 与 Production 终检已通过，见上方记录。
+
+### 2026-10-01 — 中文 booking-first 备注审批 Production 人验通过
+
+- Guest/BFF deployment `dpl_buMsMyRsa1FBhtwtsu9p15k5NXyY` 上，严格命令“为预订 699 起草内部备注：F06-R5 验收——请在入住前跟进付款。”成功生成审批卡，卡片展示准确 note，而不是 `[redacted]`。
+- 点击 **Reject draft** 成功，toast 为 `Draft rejected; no booking field changed.`，审批卡显示 `Decision: rejected`。该 approval 进入 terminal rejected 状态，订单字段不变；后续批准必须重新提交命令并创建新的 approval，这是预期的不可复活安全边界。
+- 重新提交期间曾短暂遭遇 Gemini 上游 `503` 与 `429`，对应 References `6a8d...` 与 `5f882f...`；后续重试成功生成新的审批。它们属于外部可恢复的 provider 暂时不可用/限流故障，不是审批门控或准确备注绑定失败。
+- 对新 approval 点击 **Approve note** 成功，toast 为 `Internal note added.`，审批卡显示 `EXECUTED` 与 `Decision: executed`，准确 note 已写入 Booking `#699`。这组真实 Production 证据证明严格中文命令解析、受信审批卡准确正文、Reject 零订单写入、重新创建 approval 与 Approve 执行路径均通过；证据范围不扩展到 Feature06 其他尚未完成的人工作业。
+
+### 2026-09-30 — 中文备注跨语言第二命令边界规格修复
+
+- 首轮规格复审未通过：booking-first 中文备注的 trailing-command 检查只在部分中文切换路径识别第二条严格备注命令，`private then 为订单700起草内部备注：second` 与 `private并为订单700起草内部备注：second` 可能被误绑定为第一条 note，进而到达 approval RPC。
+- 本地修复在所有已支持的显式分隔符、英文 `then/and then` 与中文强切换路径上检测严格 booking-first 中文后缀；裸 `并` 使用独立窄规则，只有后缀完整匹配“为订单/预订/booking id + 正整数 + 起草/草拟备注 + 正文”时才拒绝，不把普通 `并` 加入通用命令切换。既有“联系前台并查询付款状态”等自然正文仍合法。
+- 新增 parser undefined、sanitizer 固定 fallback 与真实工具层 query/RPC 均为 0 的对抗测试，覆盖英文跨语言切换、复合 `and then`、裸 `并`、空格与显式标点变体。最新核心目标测试 3 files / 336 tests、扩展目标测试 6 files / 348 tests、完整 `npm run check` 42 files / 671 tests、lint、typecheck 与 production build 全部通过；本地仍未提交、推送或部署，等待规格重新审查与后续 Production 复验。
+
+### 2026-09-30 — Production 中文 booking-first 备注草稿验收失败与本地修复
+
+- Production 人工验收提交“为预订 699 起草内部备注：F06-R5 验收——请在入住前跟进付款。”后，只返回 generic numeric bookingId 能力说明，没有生成审批卡或进入 Reject，因此该新增中文备注命令验收点未通过。
+- 根因是 Guest/BFF 严格中文备注 parser 与 model-facing redactor 只接受“添加/创建/写入/草拟内部备注……订单/预订 ID……”的 verb-first 语序，不接受“为预订 ID 起草内部备注……”的 booking-first 语序；请求因 fail-closed sanitizer 被替换为固定 bookingId fallback。该故障不改变此前已通过的结构化经营查询证据。
+- 本地修复仅增加严格锚定的“为预订/订单/booking id + 正整数 + 起草/草拟 + 可选内部 + 备注 + 正文”语法。原始 envelope 可绑定准确 note，但 model-facing 文本固定规范化为 `Draft internal note bookingId=699: [redacted]`；未把“起草”加入通用中文 allowlist。非法/缺失/零/负数/过长 ID、空或超 500 字 note、尾随运营命令/第二条备注/政策查询、相邻姓名或邮箱及非命令自然语言均继续失败关闭，并在工具查询/RPC 前拒绝。
+- 真实 SDK 受控模型与 route 合约继续验证：首步只允许 `addBookingInternalNote`，模型 tool input 仅含 bookingId；准确正文只出现在受信服务端绑定、审批 RPC 与授权 UI raw proposal，不进入任何模型调用或 observability。核心目标测试 3 files / 326 tests、扩展目标测试 6 files / 338 tests、完整 `npm run check` 42 files / 661 tests、lint、typecheck、production build 与 Guest/Staff `git diff --check` 均通过；仅有既有非阻塞 warnings。本地改动尚未提交、推送或部署，必须部署后用同一句命令完成审批卡、Reject、重新 Draft+Approve 的 Production 复验，不能把本节登记为恢复通过。
 
 ### 2026-09-30 — 第三次 Production 结构化经营查询复验通过
 
