@@ -7,6 +7,28 @@ import {
 import Stat from "./Stat";
 import { formatCurrency } from "../../utils/helpers";
 
+function toFiniteNumber(value) {
+  if (typeof value !== "number" && typeof value !== "string") return null;
+
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+function getOccupancyPercent(confirmedStays, numDays, cabinCount) {
+  const days = toFiniteNumber(numDays);
+  const cabins = toFiniteNumber(cabinCount);
+
+  if (days === null || days <= 0 || cabins === null || cabins <= 0) return 0;
+
+  const occupiedNights = confirmedStays.reduce((total, stay) => {
+    const nights = toFiniteNumber(stay?.numNights);
+    return nights === null || nights < 0 ? total : total + nights;
+  }, 0);
+
+  const percent = (occupiedNights / days / cabins) * 100;
+  return Number.isFinite(percent) ? Math.round(percent) : 0;
+}
+
 function Stats({ bookings, confirmedStays, numDays, cabinCount }) {
   const numBookings = bookings.length;
 
@@ -14,9 +36,11 @@ function Stats({ bookings, confirmedStays, numDays, cabinCount }) {
 
   const checkins = confirmedStays.length;
 
-  const occupation =
-    confirmedStays.reduce((acc, cur) => acc + cur.numNights, 0) /
-    (numDays * cabinCount);
+  const occupancyPercent = getOccupancyPercent(
+    confirmedStays,
+    numDays,
+    cabinCount
+  );
 
   return (
     <>
@@ -42,7 +66,7 @@ function Stats({ bookings, confirmedStays, numDays, cabinCount }) {
         title="Occupancy rate"
         color="yellow"
         icon={<HiOutlineChartBar />}
-        value={Math.round(occupation * 100) + "%"}
+        value={`${occupancyPercent}%`}
       />
     </>
   );

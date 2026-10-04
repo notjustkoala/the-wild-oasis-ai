@@ -5,13 +5,13 @@
 
 ## 当前接续点
 
-- 最后更新：2026-10-01（Asia/Shanghai）。
+- 最后更新：2026-10-04（Asia/Shanghai）。
 - 当前阶段：Feature06「作品集与简历交付」。
-- 当前状态：F06-R5 功能点 1 的结构化经营查询、严格中文 booking-first 备注审批及 post-tool stop 修复均已完成 Production 人工验收，状态为 ✅ PASS。Deployment `dpl_41cma3wTBSRkFuWJgvbMPT9UiUHC` 为 READY，Production alias 返回 `200`；终检中审批卡在首个工具步骤后直接出现并可成功 Reject，已部署版本不再依赖第二次 provider 调用才能展示已创建的 approval。该结论不扩展为 Feature06 整体完成。
-- 当前执行项：F06-R5 功能点 1 的本轮 Production recovery 已完成。严格 server-bound 备注请求在成功得到 `addBookingInternalNote` tool result 后立即终止 agent loop，trusted proposal/card 保持可见；普通经营查询仍保留多工具调用和后续模型综合。
-- 下一步：继续 Staff 功能点 2 的 Production 桌面与窄屏人工 UI 验收，以及 Cron 启用态、录屏、三次计时和陌生读者验证等 Feature06 后续工作。
+- 当前状态：F06-R5 功能点 1 的 Production 人工验收已通过；Staff Dashboard `Occupancy rate` 非有限显示修复也已在 deployment `dpl_5TpPMrWcGZiSDj52q9b2SAK3Rd42` 完成 Production 人工验证，状态为 ✅ PASS。用户确认 7/30/90 天筛选均未再出现 `NaN%`、`Infinity%` 或 `-Infinity%`，其他 KPI 无回归。该结论仅关闭本次 Dashboard 缺陷，不扩展为 Feature06 整体完成。
+- 当前执行项：Dashboard occupancy 的产品修复与 Production 人验保持 ✅ PASS；首轮质量审查指出的百分比子串断言问题已修复，最终质量复审为 ✅ APPROVED，无 Critical、Important 或 Minor 遗留。当前等待提交确认，尚未提交或推送。
+- 下一步：完成提交确认；随后继续 Staff 功能点 2 的桌面/窄屏 UI 验收及 Cron 启用态、录屏、三次计时、陌生读者验证等其余 Feature06 工作。
 - 当前阻塞：F06-R5 功能点 1 当前无产品阻塞。Staff/Guest 本地环境仍指向旧开发数据库，无法替代其他 Production 身份与数据验收；Feature06 其余人工验收仍待完成。
-- 正在运行的进程/测试：没有 dev server 或测试仍在运行。本批次最新核心目标测试 3 files / 337 tests、扩展目标测试 6 files / 349 tests 均通过；完整 `npm run check` 为 42 files / 672 tests，lint、typecheck、production build 全部通过，Guest/Staff `git diff --check` 通过。仅有既有 4 个 `<img>` lint warning、caniuse-lite 过期提示、Windows webpack cache rename `EPERM` 与本机全局 Git ignore 读取权限提示，均为非阻塞 warning。
+- 正在运行的进程/测试：没有 dev server 或测试仍在运行。强化后的 Dashboard occupancy 目标测试 1 file / 19 tests 通过；Staff 完整 `npm run check` 为 8 files / 96 tests，lint、typecheck 与 production build 全部通过，OperationsCopilot 用例本轮未超时，`git diff --check` 通过。规格复审、最终质量复审与 Production 的 7/30/90 天人工验证均通过。
 - 安全边界：GitHub 发布、隔离 Supabase 写入和 Guest 首次 Vercel 发布已完成；任何跨平台 secret 传输都必须有明确授权，且不把 secret、密码和真实邮箱写入 Git、日志或本文件。不重跑付费 live eval；Cron 继续保持失败关闭。
 
 ## 项目与基线
@@ -72,6 +72,27 @@ Feature06 开始前已经存在的 Feature05 改动属于用户资产；本阶�
 - 双端已有真实 production URL；Guest 仓库 smoke 已通过，Staff 已有浏览器生产验证，但 Staff 仓库 smoke 本轮受本机 TLS 链路阻塞，不能登记为脚本通过。仍没有可公开演示账号、录屏或三次真人计时证据。
 
 ## 变更日志
+
+### 2026-10-04 — Staff Dashboard Occupancy rate 测试强度质量修复
+
+- 首轮质量审查发现 Important：`toHaveTextContent("0%")`、`toHaveTextContent("50%")` 等字符串断言采用子串匹配，可能让 `10%` 误通过 `0%`、`150%` 误通过 `50%`。产品计算实现没有发现新问题，2026-10-02 的 Production 人验事实保持有效，但质量状态因此重开。
+- 本地测试新增统一 `expectOccupancy` helper，直接对 Occupancy value 的完整 `textContent` 做精确相等断言，并在每个场景同时断言不存在 `NaN%`、`Infinity%` 或 `-Infinity%`；不再使用可能发生子串假阳性的百分比断言。
+- 边界覆盖新增 `null`、空字符串、纯空白字符串、`numDays`/`cabinCount` 数字字符串的正常 50% 计算、全部 nights 无效时的 0%，以及 `Number.MAX_VALUE` 组成的极端但 finite 容量仍得到有限 50%。既有正常 50%、有效 120% 不 clamp、零/负/缺失/NaN/正负 Infinity 容量等场景保留。
+- 目标测试 1 file / 19 tests 通过；完整 Staff `npm run check` 8 files / 96 tests、lint、typecheck 与 production build 全部通过，OperationsCopilot 异步用例本轮正常通过、未发生偶发超时；`git diff --check` 通过。最终质量复审为 ✅ APPROVED，无 Critical、Important 或 Minor 遗留，确认首轮子串断言问题已经关闭。该质量修复批只修改测试与必要进度记录，没有改产品代码、部署或 `.gitignore`；整体 occupancy 改动仍待提交确认，且 Feature06 其他工作仍未整体完成。
+
+### 2026-10-02 — Staff Dashboard Occupancy rate Production 人验通过
+
+- 用户在 Staff Production deployment `dpl_5TpPMrWcGZiSDj52q9b2SAK3Rd42` 完成 Dashboard 人工验证；7、30、90 天筛选下均未再出现 `NaN%`、`Infinity%` 或 `-Infinity%`。
+- 用户同时确认其他 Dashboard KPI 无回归。本条仅记录用户实际确认的界面结果，不把它扩展为未执行的数据正确性审计，也不代表 Feature06 整体完成。
+- 结合此前目标测试 1 file / 12 tests、Staff 完整 `npm run check` 8 files / 89 tests、lint、typecheck、production build、规格复审及 READY deployment，本次 occupancy 缺陷的 Production 人验状态更新为 ✅ PASS。代码与记录仍待质量复审和提交确认。
+
+### 2026-10-01 — Staff Dashboard Occupancy rate 非有限显示修复已部署、待人验
+
+- Production 人工使用中发现 Dashboard 顶部 `Occupancy rate` 在零容量数据下会显示 `NaN%` 或 `Infinity%`。根因是 `Stats` 直接用 occupied nights 除以 `numDays * cabinCount`，没有验证天数、房型数量或夜数是否为有限有效数字。
+- 本地修复仅作用于入住率 KPI：`numDays`/`cabinCount` 必须可转换为 finite 正数，否则显示 `0%`；每条 stay 的 `numNights` 仅在可转换为 finite 非负数时计入，缺失、非数值、负数与正负 Infinity 均按 0 忽略。最终百分比再做 finite 检查与整数四舍五入，确保不会渲染 `NaN%`、`Infinity%` 或 `-Infinity%`。
+- 没有把有效结果 clamp 到 100%；有效数据若产生大于 100% 的入住率仍照常展示，以暴露上游重复/冲突数据，而不是在展示层隐藏异常。Bookings、Sales、Check ins 等其他 KPI 均未改变。
+- `tests/Stats.test.tsx` 新增零 cabins（空/正 nights）、零 days、缺失/NaN/正负 Infinity/负容量、无效 stay nights、数字字符串夜数、正常 50% 与有效 120% 场景，并显式断言页面不存在非有限百分比。目标测试 1 file / 12 tests、完整 Staff `npm run check` 8 files / 89 tests、lint、typecheck 与 production build 均通过；规格复审为 ✅ PASS。这些仍是本地自动化/静态审查证据，不是 Production UI 证据。
+- 修复已部署为 Staff Production deployment `dpl_5TpPMrWcGZiSDj52q9b2SAK3Rd42`，远端状态为 READY，正式 alias [`https://the-wild-oasis-ai.vercel.app/`](https://the-wild-oasis-ai.vercel.app/) 的 HEAD 请求返回 `200`。当前尚未人工确认实际 Dashboard 的 Occupancy rate，因此本功能点仍为“已部署、待人验”；代码与记录也尚未提交或推送。
 
 ### 2026-10-01 — post-tool stop 最终 Production 复验通过
 
