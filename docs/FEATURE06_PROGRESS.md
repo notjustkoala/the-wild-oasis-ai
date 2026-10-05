@@ -5,13 +5,14 @@
 
 ## 当前接续点
 
-- 最后更新：2026-10-04（Asia/Shanghai）。
+- 最后更新：2026-10-05（Asia/Shanghai）。
 - 当前阶段：Feature06「作品集与简历交付」。
+- 模型迁移：2026-10-04 用户决定暂不替换模型；[GPT-6 迁移计划](GPT6_MIGRATION_PLAN.md) 保留为后续参考。当前继续使用既有 Gemini 与 embedding 配置。
 - 当前状态：F06-R5 功能点 1 的 Production 人工验收已通过；Staff Dashboard `Occupancy rate` 非有限显示修复也已在 deployment `dpl_5TpPMrWcGZiSDj52q9b2SAK3Rd42` 完成 Production 人工验证，状态为 ✅ PASS。用户确认 7/30/90 天筛选均未再出现 `NaN%`、`Infinity%` 或 `-Infinity%`，其他 KPI 无回归。该结论仅关闭本次 Dashboard 缺陷，不扩展为 Feature06 整体完成。
-- 当前执行项：Dashboard occupancy 的产品修复与 Production 人验保持 ✅ PASS；首轮质量审查指出的百分比子串断言问题已修复，最终质量复审为 ✅ APPROVED，无 Critical、Important 或 Minor 遗留。当前等待提交确认，尚未提交或推送。
-- 下一步：完成提交确认；随后继续 Staff 功能点 2 的桌面/窄屏 UI 验收及 Cron 启用态、录屏、三次计时、陌生读者验证等其余 Feature06 工作。
+- 当前执行项：用户已明确授权直接部署双端。Guest 新版已通过 Git 自动部署上线，生产版本已核对；Staff 新版已提交并推送，但仍需官方 CLI 登录认证后直接发布。验收前自审与回归完成，已准备 [逐项验收清单](DUAL_STREAMING_ACCEPTANCE.md)。人工项均待验收。
+- 下一步：等待用户在官方 Vercel device 页面完成登录认证，随后以已有 Production 环境变量远端构建 Staff，核对新代码与正式域名后交付两端人工验收入口。不以 Staff 旧 production 页面验收本地改动。
 - 当前阻塞：F06-R5 功能点 1 当前无产品阻塞。Staff/Guest 本地环境仍指向旧开发数据库，无法替代其他 Production 身份与数据验收；Feature06 其余人工验收仍待完成。
-- 正在运行的进程/测试：没有 dev server 或测试仍在运行。强化后的 Dashboard occupancy 目标测试 1 file / 19 tests 通过；Staff 完整 `npm run check` 为 8 files / 96 tests，lint、typecheck 与 production build 全部通过，OperationsCopilot 用例本轮未超时，`git diff --check` 通过。规格复审、最终质量复审与 Production 的 7/30/90 天人工验证均通过。
+- 正在运行的进程/测试：本轮测试及自建 Staff fixture dev server 已停止。审批修复后 Staff `npm run check` 9 files / 117 tests、lint/typecheck/build 和流式浏览器 5/5 PASS；Guest 沿用上一轮 42 files / 675 tests 与浏览器 4/4 的证据。实际 SDK 协议核对 3/3 PASS，均无真实模型调用。
 - 安全边界：GitHub 发布、隔离 Supabase 写入和 Guest 首次 Vercel 发布已完成；任何跨平台 secret 传输都必须有明确授权，且不把 secret、密码和真实邮箱写入 Git、日志或本文件。不重跑付费 live eval；Cron 继续保持失败关闭。
 
 ## 项目与基线
@@ -62,6 +63,7 @@ Feature06 开始前已经存在的 Feature05 改动属于用户资产；本阶�
 | F06-R3 | 独立仓库公开链接稳定化 | 已完成 | 两个独立 GitHub origin 已发布，跨 sibling 文档链接使用固定 `main` 绝对 URL 并通过检查 |
 | F06-R4 | Sequence 权限与 migration 初始化顺序 | 已完成（本地范围） | service_role 获得 `setval` 所需 UPDATE；SQL/合约断言；所有 versioned migrations 按文件名应用且不跳过中间迁移 |
 | F06-R5 | Copilot 中文安全语法、隐私安全备注与结果抽屉可读性 | 功能点 1 Production 人验与 post-tool stop 终检 ✅ PASS；功能点 2 spec ✅ PASS、quality ✅ APPROVED、已发布 | 结构化查询、中文备注 Reject → 新建 approval → Approve 及单步返回审批卡均通过；Staff 抽屉仍待 Production 桌面/窄屏人工 UI 验收 |
+| F06-R6 | 双端实时结果卡片与文字、工具进度、停止/恢复和滚动 | 已完成（本地实现/验证；生产待发布与人验） | 两端 check、契约/组件与分段 HTTP fixture 浏览器通过；保留 Gemini/检索配置与人工审批，未提交/部署 |
 
 ## 已知证据边界
 
@@ -72,6 +74,73 @@ Feature06 开始前已经存在的 Feature05 改动属于用户资产；本阶�
 - 双端已有真实 production URL；Guest 仓库 smoke 已通过，Staff 已有浏览器生产验证，但 Staff 仓库 smoke 本轮受本机 TLS 链路阻塞，不能登记为脚本通过。仍没有可公开演示账号、录屏或三次真人计时证据。
 
 ## 变更日志
+
+### 2026-10-05 — F06-R6 双端 Production 发布开始
+
+- 用户明确要求直接部署后再人工验收，已选择完整线上验收，不再等待环境选择。保持既有 Gemini、embedding、生产环境变量和数据库配置，不进行模型迁移或数据库重建。
+- 本地最终验证证据沿用上方 117/675 项及分段 HTTP 浏览器测试；本轮先核对远端项目与发布访问，再发布已验证源码。人工项目继续标为待验收。
+- 产品与测试提交已推送原 origin/main：Guest `db48b5e84d97537cf69614c51118661321e4fb4e`（feat: improve concierge streaming experience）；Staff `ae31d382f5fe48c9c48a269d0184ec52d4c5c28f`（feat: stream operations results and support cancellation）。本地保留 codex/ai-hospitality-platform 分支及用户 .gitignore 改动。
+- Guest Git 自动部署 `8DexMvyneqjLodx6cd8robHhhaUx` 的 Vercel GitHub status 为 success；生产首页 HTTP 200，公开 layout chunk `app/layout-1ac226db98503e84.js` 包含 Jump to latest、保留已收到内容、未完成工具停止及中文输入法保护的新代码。没有调用真实模型或写数据库。
+- 两端正式 smoke 脚本在可联网环境均 exit 0 / HTTP 200，但 Staff 公开入口 `/assets/index-8478d492.js` 仍无 Jump to latest/Recording decision，未上线本轮改动；不能把首页可访问写作 Staff 发布成功。Staff 提交暂无 Vercel GitHub status，正在准备直接 CLI 发布与认证恢复。
+- Guest/BFF `/api/ai/admin` 对 Staff 正式 origin 的 OPTIONS 为 204，Access-Control-Allow-Origin 精确匹配 Staff 正式域名。仅预检，无模型调用或数据库写入。
+- Staff 新增 .vercelignore，明确排除本地 .env、node_modules、dist、.git、测试/文档和产物，不使用本地开发环境编译的 dist。部署工具固定版本安装在临时目录，未修改项目依赖；官方 CLI device 登录已启动，已请求用户完成认证，凭据和 device code 不写入本记录。
+
+### 2026-10-05 — F06-R6 验收前自审通过、人工入口待选择
+
+- 已准备 `docs/DUAL_STREAMING_ACCEPTANCE.md`，包含当前版本/证据边界、环境和顺序、9 个人工用例及输入/通过标准/反馈格式；所有人工状态保持待验收。这是本轮自审，不虚构独立 reviewer 的 spec/quality APPROVED。
+- 使用已安装 AI SDK 的真实 ToolLoopAgent/UI serializer，向当前 Staff 消费者输入 MockLanguageModelV4 合成流，查询→文字、单步备注审批卡、参数错误→后续文字恢复 3/3 PASS。没有真实模型、embedding 或数据库网络调用。
+- 自审发现现有审批状态的竞态：决定请求未结束即可发新问题，旧决定可能覆盖新草稿的 UI；并发现 approveing 拼写不匹配既有 Approving 状态。先新增回归用例验证失败，再明确使用 approving/rejecting，提交决定时禁用输入/新问题并在 submit handler 再次检查，完成后恢复；审批本身仍需要用户明确点击。
+- 修复后 Staff 完整 `npm run check` exit 0：lint、typecheck、9 files / 117 tests、Vite production build。批准和拒绝两种待返回状态均已测试，程序化 submit 不能绕过限制。Guest 本轮无产品源码变化，没有把旧证据写成重跑。
+- Staff `streaming.spec.ts` 5/5 PASS（exit 0）：桌面/390px 输出与停止、断流保留、滚动、备注审批。备注 HTTP fixture 增加慢响应，核实 Recording decision 与 Approving 显示正确、不能发新问题、提交结束恢复；未访问真实审批数据库。
+- Vercel 只读状态核对遇到访问问题：list connector 返回 INVALID_ARGUMENT，get project 显示 404 Project not found。已缓存 CLI 默认目录无法写 config（随后 EXDEV）；隔离临时配置模式能够运行 help，但没有找到当前机器已有 CLI 凭据。未创建新 token、改变远端项目配置、部署或声称取得当前线上版本；临时配置目录已按校验后的路径清理。
+- 用户的验收环境选择尚未回复；不能把待选择的线上范围当作发布/模型调用批准。开始人工第一项需要对应可访问的本地交互入口或新发布线上入口，旧 production 域名不是本轮发布证据。
+- Markdown 链接检查 82 local links / 33 files、`git diff --check` 已通过；本轮最终文档更新后再核对。自建 Staff fixture server 已停止，既有用户修改保留。
+
+### 2026-10-05 — F06-R6 验收流程开始
+
+- 用户要求“开始进入验收流程”。本轮先进行需求/代码与协议边界自审，准备可操作的验收输入、期望结果和反馈记录；未提前登记人工 PASS，也未将开启验收等同于发布/提交完成。
+- 开始基线核对：Staff `3291c0930bdde4a8bfc4ad761ddc082af989146a`，Guest `0bc848428e110a1058cdce9515ad5057c6811597`；流式实现、测试、进度/迁移计划均为既有未提交改动，Staff 用户原有 `.gitignore` 保留。
+- 正在核对已安装 `ai@7.0.58` 实际生成的 UI 流与 Staff 原生消费者契约，避免仅依赖手工 SSE fixture。只使用 Mock 模型和合成工具结果，不访问模型/数据库。
+- 通过 Vercel 技能只读查询两个项目部署；连接器均返回 `INVALID_ARGUMENT`，本轮尚未取得新的远端版本证据。正在准备后续环境选择，旧生产入口不能代表本地流式改动。
+
+### 2026-10-04 — F06-R6 本地交付与最终验证
+
+- 完成选定的“实时结果卡片＋文字”：Staff 切至已有 SSE 路径；Guest 完善流式状态和光标。通过校验的卡片到达即显示，工具进度实时更新；停止/关闭/卸载会取消请求，断流保留内容，并明确标记尚未完成的工具。向上阅读时暂停跟随，Jump to latest 恢复；流式员工说明默认展开，旧 JSON 响应仍兼容。
+- 备注审批继续由用户点击完成，流式生成中审批按钮禁用；完成且合法的审批卡不需要再次调用模型，后端既有 post-tool stop 未修改。已用 HTTP fixture 验证生成中无审批请求、完成后明确点击仅产生一次审批请求。未改 provider/model/embedding、数据库、计费或生产环境。
+- 两端完整 `npm run check` PASS：Staff lint/typecheck、9 files / 114 tests、Vite build；Guest lint/typecheck、42 files / 675 tests、Next production build。Guest 四处既有 img warning、旧 Browserslist 与本机 webpack cache rename EPERM warning 没有阻止构建，不登记为新功能错误。
+- 最后源码核对发现 SDK 完整无效工具调用可以直接发 input-error；补齐该分支及随后 output-error 的去重，防止误中断整个响应。补验 Staff typecheck、`operationsStream.test.ts` 1 file / 16 tests、Vite production build 均 PASS；不把这个新增用例混入此前完整 check 的 114 计数。
+- 浏览器：Staff `streaming.spec.ts operations.spec.ts` 12/12 PASS（新流式 5 项＋既有 JSON/安全/布局 7 项）；Guest `streaming.spec.ts` 4/4 PASS。新测试使用本地可控的真实分段 HTTP SSE，覆盖响应结束前文字/卡片、桌面/390px 手机、停止断开连接、网络丢失保留内容、滚动暂停/恢复及审批。Guest 初次断流用例只因 Next 全局 alert 与业务 alert 的定位冲突失败，限定 dialog 后 4 项复验全部通过。
+- Playwright 首次自动 webServer 清理在本机 Windows 环境未退出，因此中断该轮，不登记为整轮 PASS；随后显式管理本地服务器，以 `E2E_BASE_URL`＋list reporter 复验，两套命令均 exit 0。Staff 配置增加与 Guest 一致的外部本地服务器入口。最后停止自建服务器，确认 5174/3100 无监听；既有 Feature05 四张截图的本轮覆盖已还原，保留用户原有 `.gitignore` 改动。
+- 已人工查看两端手机 fixture 截图，卡片、文字、工具活动与固定停止按钮可读，抽屉无横向溢出；截图为 `output/playwright/dual-streaming-desktop.png` 与 `dual-streaming-mobile.png`（两仓库各一套）。不是实际 Gemini、真实库存或 Production 证据。
+- 两端 Markdown 链接检查、`git diff --check` 通过。没有新增 live eval、数据库写入、模型迁移、向量库重建、提交或部署。发布后仍需验证真实 Gemini 延迟、代理链路是否缓冲，以及生产环境真实权限/检索/审批流。
+
+### 2026-10-04 — F06-R6 流式实现与第一批离线验证
+
+- Staff 使用已有 BFF 的 AI SDK UI SSE 协议，逐段接收文字、工具活动和通过原有类型校验的结果卡片；保留旧 JSON 响应兼容。不新增 AI SDK/provider 依赖；有 UTF-8/分帧/大小/终止校验，忽略原始工具输入和 provider metadata。
+- 双端支持停止、关闭/卸载取消、保留已收到内容、未完成工具的明确状态，以及阅读上文时暂停滚动与 Jump to latest。Staff 隔离旧请求的迟到更新，生成中暂停审批/反馈；Guest 修复中文输入法确认时误发送。流式文字在收到卡片后及停止/失败后保持展开。
+- 第一批离线证据：Staff `apiOperationsCopilot`、`operationsStream`、`OperationsCopilot` 合计 3 files / 80 tests PASS；Guest Concierge UI 为 1 file / 11 tests PASS。包含结束前卡片/文字可见、分片中文、异常 EOF、取消、无效工具输出、并行工具状态、滚动、生命周期清理等用例。
+- 验证中已修复 Staff 首次 lazy Markdown 加载导致文字显示延迟（先显示安全纯文本）；新增测试的 afterEach 返回类型需调整为 void，正在复验 typecheck。Guest typecheck 已通过，lint 只有原有四处 img warning。
+- 正在增加本地真实分段 HTTP fixture 浏览器用例，验证两端桌面/手机输出、停止、断流与滚动；尚未把待运行结果写为通过。没有真实模型调用、数据库写入或生产发布。
+
+### 2026-10-04 — F06-R6 双端流式体验开始
+
+- 用户明确暂不替换模型，将当前主要任务切为完善双端流式输出；选择“实时结果卡片＋文字”。范围为 Guest Concierge 与 Staff Copilot；Briefing 保持完整 JSON 校验后展示。
+- 开始基线：Staff 保留既有 `.gitignore` 修改及本轮迁移计划/进度文档，Guest 工作区干净。Staff 客户端目前固定 `Accept: application/json`；BFF 已有 AI SDK UI stream，Guest 已使用 `useChat`。
+- 使用 Vercel AI SDK 技能核对本地 `ai@7.0.58` 协议与源码；不切 provider/model，不调用付费 live eval，不改数据库/生产配置。审批、身份与脱敏边界延续已有实现。
+
+### 2026-10-04 — 双项目 GPT-6 迁移计划完成
+
+- 已创建 `docs/GPT6_MIGRATION_PLAN.md`，包括分工作流模型/effort 候选、官方定价与来源、共享 BFF 的精确改动落点、Responses/Schema/预算/缓存/计费兼容性、五阶段实施、验收与回退；预计有效工时 4–5 个工作日，不含权限/预算准备与人工等待。
+- 关键静态发现：Copilot 复用 Concierge resolver 和 observer 模型身份，需要一并拆分；现有 900/1200 输出预算需检查推理占用；现有 live runner 只有 Concierge 且计费仅含总 input/output；Briefing hash 已有模型身份，未来 effort 配置也需纳入；Google 768 维 embedding 继续独立保留。
+- 本轮真实验证：Staff `npm run docs:check` 首次 76 local links / 32 files 通过，补充进度入口后直接运行同一 checker 为 77 local links / 32 files 通过；Guest `npm run docs:check` 7 local links / 21 files 通过；Staff `git diff --check` 通过。仅文档检查，未运行产品测试、模型调用、数据库或生产验证；用户既有 `.gitignore` 修改保留。
+- 下一步为按计划实施 M0/M1，真实模型评测必须有预算及对应环境授权；当前任务只要求计划，未将历史授权视为新的付费 Eval 授权。原 Feature06 未完成验收继续按既有接续点推进。
+
+### 2026-10-04 — 双项目 GPT-6 迁移计划开始
+
+- 用户已明确范围为 `17-the-wild-oasis-ai` 与 `21-the-wild-oasis-website-ai` 一起规划；两端实际共用 Guest/Next.js AI BFF，Staff 本身没有模型 provider SDK。
+- 只读核查基线：Staff HEAD `3291c09`，已有 `.gitignore` 修改；Guest/BFF HEAD `0bc8484`，工作区干净。既有修改保留。
+- 使用 OpenAI Docs 技能先搜索并打开 GPT-6 官方迁移/模型资料，再检查源码。发现 Google 默认 `gemini-3.8-flash`、Gateway 默认 `openai/gpt-5.6-terra`；生产历史使用 `gemini-3.6-flash`，本轮未读取部署密钥或核验当前生产配置。
+- 计划落点：`docs/GPT6_MIGRATION_PLAN.md`。仅文档任务，不运行模型、数据库、浏览器或生产验证；原 Feature06 验收状态保持原有证据范围。
 
 ### 2026-10-04 — Staff Dashboard Occupancy rate 测试强度质量修复
 
