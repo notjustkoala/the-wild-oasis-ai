@@ -1,4 +1,5 @@
-import { act, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import type { OperationsResponse } from "../src/services/apiOperationsCopilot";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, useLocation } from "react-router-dom";
 import CopilotDrawer from "../src/features/operations-copilot/CopilotDrawer";
@@ -37,6 +38,63 @@ async function userAction(action: () => Promise<unknown>) {
 }
 
 describe("Operations Copilot drawer", () => {
+  it("renders live cards and text, keeps them on stop, and ignores late updates from the cancelled request", async () => {
+    let update!: (result: OperationsResponse) => void;
+    let resolve!: (result: OperationsResponse) => void;
+    let signal!: AbortSignal;
+    ask.mockImplementation((_text, requestSignal, onUpdate) => { signal = requestSignal; update = onUpdate; return new Promise((done) => { resolve = done; }); });
+    const user = userEvent.setup();
+    render(<MemoryRouter><CopilotDrawer /></MemoryRouter>);
+    await userAction(() => user.click(screen.getByRole("button", { name: /Operations Copilot/ })));
+    await userAction(() => user.type(screen.getByRole("textbox"), "Show arrivals"));
+    await userAction(() => user.click(screen.getByRole("button", { name: "Ask Copilot" })));
+    const partial: OperationsResponse = { text: "Arrivals checked.", steps: [{ stepNumber: 0, text: "", status: "running", toolCalls: [{ toolName: "getArrivals", input: {}, status: "completed" }, { toolName: "getBookingRisks", input: {}, status: "running" }], toolResults: [{ toolName: "getArrivals", output: { kind: "arrivals", arrivals: [], facts: [], sourceIds: [], truncated: false } }] }] };
+    await act(async () => update(partial));
+    expect(screen.getByText("No matching arrivals were found.")).toBeVisible();
+    expect(screen.getByText("Arrivals checked.")).toBeVisible();
+    expect(screen.getByText("Booking risk review · running")).toBeVisible();
+    await userAction(() => user.click(screen.getByRole("button", { name: "Stop response" })));
+    expect(signal.aborted).toBe(true);
+    expect(screen.getByText("Arrivals checked.")).toBeVisible();
+    expect(screen.getByText("Booking risk review · interrupted")).toBeVisible();
+    expect(screen.getByRole("textbox")).toBeEnabled();
+    expect(toastError).not.toHaveBeenCalled();
+    await act(async () => { update({ text: "Stale update", steps: [] }); resolve({ text: "Stale final", steps: [] }); });
+    expect(screen.queryByText(/Stale/)).not.toBeInTheDocument();
+    expect(screen.getByText("Arrivals checked.")).toBeVisible();
+  });
+
+  it("pauses scrolling while reading earlier results and resumes with Jump to latest", async () => {
+    let update!: (result: OperationsResponse) => void;
+    ask.mockImplementation((_text, _signal, onUpdate) => { update = onUpdate; return new Promise(() => {}); });
+    const user = userEvent.setup();
+    const { unmount } = render(<MemoryRouter><CopilotDrawer /></MemoryRouter>);
+    await userAction(() => user.click(screen.getByRole("button", { name: /Operations Copilot/ })));
+    await userAction(() => user.type(screen.getByRole("textbox"), "Show arrivals"));
+    await userAction(() => user.click(screen.getByRole("button", { name: "Ask Copilot" })));
+    const content = screen.getByLabelText("Operations response");
+    Object.defineProperties(content, { scrollHeight: { configurable: true, value: 1200 }, clientHeight: { configurable: true, value: 300 } });
+    content.scrollTop = 200;
+    fireEvent.scroll(content);
+    await act(async () => update({ text: "New answer text", steps: [] }));
+    expect(content.scrollTop).toBe(200);
+    await userAction(() => user.click(screen.getByRole("button", { name: "Jump to latest" })));
+    expect(content.scrollTop).toBe(1200);
+    const signal = ask.mock.calls[0][1];
+    unmount();
+    expect(signal.aborted).toBe(true);
+  });
+
+  it("keeps received results visible when a stream fails", async () => {
+    ask.mockImplementation(async (_text, _signal, onUpdate) => { onUpdate({ text: "Partial answer", steps: [] }); throw new Error("Connection interrupted."); });
+    const user = userEvent.setup();
+    render(<MemoryRouter><CopilotDrawer /></MemoryRouter>);
+    await userAction(() => user.click(screen.getByRole("button", { name: /Operations Copilot/ })));
+    await userAction(() => user.type(screen.getByRole("textbox"), "Show arrivals"));
+    await userAction(() => user.click(screen.getByRole("button", { name: "Ask Copilot" })));
+    expect(screen.getByText("Partial answer")).toBeVisible();
+    expect(screen.getByRole("alert")).toHaveTextContent("Connection interrupted");
+  });
   beforeEach(() => {
     ask.mockReset();
     decide.mockReset();
@@ -142,6 +200,26 @@ describe("Operations Copilot drawer", () => {
     await userAction(() => user.click(screen.getByRole("button", { name: "Reject draft" })));
     expect(decide).toHaveBeenCalledWith("00000000-0000-0000-0000-000000000001", "reject");
     expect(await screen.findByText("Decision: rejected.")).toBeVisible();
+  });
+
+  it.each(["approve", "reject"] as const)("blocks a new query while recording %s so its result cannot apply to another draft", async (action) => {
+    ask.mockResolvedValue({ text: "Draft ready.", steps: [{ stepNumber: 0, status: "completed", text: "", toolCalls: [], toolResults: [{ toolName: "addBookingInternalNote", output: { kind: "internal-note-approval", approvalId: "00000000-0000-0000-0000-000000000001", bookingId: 1, note: "Acceptance fixture note.", status: "pending", facts: [], sourceIds: [], truncated: false } }] }] });
+    let finishDecision!: (value: { status: string }) => void;
+    decide.mockImplementation(() => new Promise((resolve) => { finishDecision = resolve; }));
+    const user = userEvent.setup();
+    render(<MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}><CopilotDrawer /></MemoryRouter>);
+    await userAction(() => user.click(screen.getByRole("button", { name: /operations copilot/i })));
+    await userAction(() => user.type(screen.getByRole("textbox"), "Draft a note for booking 1"));
+    await userAction(() => user.click(screen.getByRole("button", { name: "Ask Copilot" })));
+    await userAction(() => user.click(screen.getByRole("button", { name: action === "approve" ? "Approve note" : "Reject draft" })));
+    expect(screen.getByRole("button", { name: "Recording decision…" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: action === "approve" ? "Approving…" : "Rejecting…" })).toBeDisabled();
+    fireEvent.submit(screen.getByRole("textbox").closest("form")!);
+    expect(ask).toHaveBeenCalledOnce();
+    const status = action === "approve" ? "executed" : "rejected";
+    await act(async () => finishDecision({ status }));
+    expect(screen.getByText(`Decision: ${status}.`)).toBeVisible();
+    expect(screen.getByRole("button", { name: "Ask Copilot" })).toBeEnabled();
   });
 
   it("does not show approval success when response validation rejects a malformed payload", async () => {

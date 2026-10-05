@@ -130,15 +130,42 @@ export default function CopilotDrawer() {
   const [result, setResult] = useState<OperationsResponse | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [cancelled, setCancelled] = useState(false);
+  const [hasStreamed, setHasStreamed] = useState(false);
+  const [showLatest, setShowLatest] = useState(false);
   const [receipt, setReceipt] = useState<OperationsReceipt | null>(null);
   const activeRequest = useRef<AbortController | null>(null);
   const [approvalState, setApprovalState] = useState<string | null>(null);
+  const decisionPending = approvalState === "approving" || approvalState === "rejecting";
   const launcherRef = useRef<HTMLButtonElement>(null);
   const drawerRef = useRef<HTMLElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const restoreLauncherFocus = useRef(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const followLatest = useRef(true);
   const toolOutputs = useMemo(() => outputs(result), [result]);
   const proposal = toolOutputs.find((output) => output.kind === "internal-note-approval");
+
+  useEffect(() => () => { activeRequest.current?.abort(); activeRequest.current = null; }, []);
+
+  useEffect(() => {
+    const content = contentRef.current;
+    if (!content) return;
+    if (followLatest.current) content.scrollTop = content.scrollHeight;
+    else setShowLatest(content.scrollHeight - content.scrollTop - content.clientHeight > 80);
+  }, [result, busy, error, open]);
+
+  function stopResponse() {
+    if (!activeRequest.current) return;
+    activeRequest.current.abort();
+    activeRequest.current = null;
+    setBusy(false);
+    setCancelled(true);
+    setResult((previous) => previous ? { ...previous, steps: previous.steps.map((step) => ({ ...step,
+      status: step.status === "running" ? "interrupted" : step.status,
+      toolCalls: step.toolCalls.map((call) => ({ ...call, status: call.status === "running" ? "interrupted" : call.status })),
+    })) } : previous);
+  }
 
   useEffect(() => {
     if (open) {
@@ -154,6 +181,7 @@ export default function CopilotDrawer() {
   }, [open]);
 
   function closeDrawer() {
+    stopResponse();
     setOpen(false);
   }
 
@@ -181,29 +209,40 @@ export default function CopilotDrawer() {
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!input.trim() || busy) return;
+    if (!input.trim() || busy || decisionPending) return;
     setBusy(true);
+    setCancelled(false);
+    setHasStreamed(false);
+    followLatest.current = true;
+    setShowLatest(false);
     setError(null);
     setResult(null);
     setReceipt(null);
-    activeRequest.current = new AbortController();
+    const controller = new AbortController();
+    activeRequest.current = controller;
     setApprovalState(null);
     try {
-      const answer = await askOperationsCopilot(input, activeRequest.current.signal);
+      const answer = await askOperationsCopilot(input, controller.signal, (partial) => {
+        if (activeRequest.current !== controller) return;
+        setHasStreamed(true);
+        setResult(partial); setReceipt(partial.receipt ?? null);
+      });
+      if (activeRequest.current !== controller) return;
       setResult(answer); setReceipt(answer.receipt ?? null);
     } catch (requestError) {
+      if (activeRequest.current !== controller || controller.signal.aborted) return;
       const message = requestError instanceof Error ? requestError.message : "The operations copilot is unavailable.";
       setError(message);
       if (requestError instanceof OperationsRequestError) setReceipt(requestError.receipt ?? null);
       toast.error(message);
     } finally {
-      setBusy(false);
+      if (activeRequest.current === controller) { activeRequest.current = null; setBusy(false); }
     }
   }
 
   async function decide(action: "approve" | "reject") {
-    if (!proposal || approvalState) return;
-    setApprovalState(`${action}ing`);
+    if (!proposal || approvalState || busy) return;
+    setApprovalState(action === "approve" ? "approving" : "rejecting");
     try {
       const response = await decideOperationsApproval(proposal.approvalId, action);
       setApprovalState(response.status);
@@ -217,19 +256,29 @@ export default function CopilotDrawer() {
   return <>
     <Launcher ref={launcherRef} type="button" onClick={() => setOpen(true)} aria-haspopup="dialog" aria-expanded={open}>✦ Operations Copilot</Launcher>
     {open ? <><DrawerOpenScrollLock /><Overlay>
-      <Drawer ref={drawerRef} role="dialog" aria-modal="true" aria-labelledby="operations-copilot-title" aria-describedby="operations-copilot-description" aria-busy={busy} onKeyDown={handleDrawerKeyDown}>
+      <Drawer ref={drawerRef} role="dialog" aria-modal="true" aria-labelledby="operations-copilot-title" aria-describedby="operations-copilot-description" aria-busy={busy || decisionPending} onKeyDown={handleDrawerKeyDown}>
         <Header>
           <div><h2 id="operations-copilot-title">Operations Copilot</h2><p id="operations-copilot-description">Read-only operational answers with approval-gated notes.</p></div>
           <Close type="button" onClick={closeDrawer} aria-label="Close operations copilot">×</Close>
         </Header>
         <Form onSubmit={submit}>
           <label htmlFor="operations-copilot-question">Ask an operational question</label>
-          <textarea ref={textareaRef} id="operations-copilot-question" value={input} onChange={(event) => setInput(event.target.value)} maxLength={2_000} placeholder="Draft an internal note for booking 123: Follow up on payment" disabled={busy} />
-          <Button type="submit" disabled={busy || !input.trim()}>{busy ? "Thinking…" : "Ask Copilot"}</Button>
+          <textarea ref={textareaRef} id="operations-copilot-question" value={input} onChange={(event) => setInput(event.target.value)} maxLength={2_000} placeholder="Draft an internal note for booking 123: Follow up on payment" disabled={busy || decisionPending} />
+          <Button type="submit" disabled={busy || decisionPending || !input.trim()}>{decisionPending ? "Recording decision…" : busy ? "Thinking…" : "Ask Copilot"}</Button>
+          {busy ? <Button type="button" $secondary onClick={stopResponse}>Stop response</Button> : null}
+          {showLatest ? <Button type="button" $secondary onClick={() => {
+            followLatest.current = true; setShowLatest(false);
+            if (contentRef.current) contentRef.current.scrollTop = contentRef.current.scrollHeight;
+          }}>Jump to latest</Button> : null}
         </Form>
-        <Content>
-          {busy ? <p role="status">Loading operational data…</p> : null}
-          {busy ? <Button type="button" $secondary onClick={() => activeRequest.current?.abort()}>Stop response</Button> : null}
+        <Content ref={contentRef} aria-label="Operations response" aria-live="polite" aria-busy={busy} onScroll={() => {
+          const content = contentRef.current;
+          if (!content) return;
+          followLatest.current = content.scrollHeight - content.scrollTop - content.clientHeight <= 80;
+          if (followLatest.current) setShowLatest(false);
+        }}>
+          {busy ? <p role="status">{result?.text ? "Writing response…" : "Loading operational data…"}</p> : null}
+          {cancelled ? <p role="status">Response stopped. Received results are kept and may be incomplete.</p> : null}
           {error ? <p role="alert">{error}</p> : null}
           {!busy && !result && !error ? <p role="status">Ask an operational question to begin.</p> : null}
           {result ? <StructuredResults
@@ -239,10 +288,12 @@ export default function CopilotDrawer() {
             approvalState={approvalState}
             onDecision={(action) => void decide(action)}
             onContinue={closeDrawer}
+            streaming={busy}
+            expandExplanation={hasStreamed}
           /> : null}
           {!result ? <FallbackFooter>
             <Link to="/bookings" onClick={closeDrawer}>Continue with Bookings</Link>
-            {receipt ? <ResponseFeedback key={receipt.traceId} receipt={receipt} /> : null}
+            {receipt && !busy ? <ResponseFeedback key={receipt.traceId} receipt={receipt} /> : null}
           </FallbackFooter> : null}
         </Content>
       </Drawer>

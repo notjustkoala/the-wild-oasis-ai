@@ -123,6 +123,8 @@ export default function StructuredResults({
   approvalState,
   onDecision,
   onContinue,
+  streaming = false,
+  expandExplanation = streaming,
 }: {
   result: OperationsResponse;
   outputs: OperationsToolOutput[];
@@ -130,6 +132,8 @@ export default function StructuredResults({
   approvalState: string | null;
   onDecision: (action: "approve" | "reject") => void;
   onContinue: () => void;
+  streaming?: boolean;
+  expandExplanation?: boolean;
 }) {
   const proposal = outputs.find((output): output is ApprovalOutput => output.kind === "internal-note-approval");
   const metrics = outputs.filter((output): output is Extract<OperationsToolOutput, { kind: "booking-metrics" }> => output.kind === "booking-metrics");
@@ -156,10 +160,10 @@ export default function StructuredResults({
           <strong id="copilot-approval-title">Internal note · Booking #{proposal.bookingId}</strong>
           <p>{proposal.note}</p>
           <Actions>
-            <Action type="button" onClick={() => onDecision("approve")} disabled={Boolean(approvalState)}>
+            <Action type="button" onClick={() => onDecision("approve")} disabled={streaming || Boolean(approvalState)}>
               {approvalState === "approving" ? "Approving…" : "Approve note"}
             </Action>
-            <Action type="button" $secondary onClick={() => onDecision("reject")} disabled={Boolean(approvalState)}>
+            <Action type="button" $secondary onClick={() => onDecision("reject")} disabled={streaming || Boolean(approvalState)}>
               {approvalState === "rejecting" ? "Rejecting…" : "Reject draft"}
             </Action>
           </Actions>
@@ -201,12 +205,12 @@ export default function StructuredResults({
       {cabins.length ? <Group><SectionTitle>Cabin performance</SectionTitle>{cabins.map((output, index) => <ChartResult key={`cabins-${index}`} output={output} />)}</Group> : null}
       {policies.length ? <PolicyGroup><SectionTitle>Policy sources</SectionTitle>{policies.map((output, index) => <PolicyCitations key={`policies-${index}`} output={output} />)}</PolicyGroup> : null}
 
-      <CopilotAnswer text={result.text} hasStructuredResults={hasStructuredResults} />
+      <CopilotAnswer text={result.text} hasStructuredResults={hasStructuredResults} streaming={streaming} expanded={expandExplanation} />
       <ToolTimeline steps={result.steps} />
 
       <Footer>
         <Link to="/bookings" onClick={onContinue}>Continue with Bookings</Link>
-        {receipt ? <ResponseFeedback key={receipt.traceId} receipt={receipt} /> : null}
+        {receipt && !streaming ? <ResponseFeedback key={receipt.traceId} receipt={receipt} /> : null}
       </Footer>
     </Results>
   );

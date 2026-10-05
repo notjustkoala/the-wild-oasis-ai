@@ -1,4 +1,5 @@
 import supabase from "./supabase";
+import { readOperationsStream } from "./operationsStream";
 
 type OperationsToolOutputBase = {
   facts: string[];
@@ -89,8 +90,8 @@ export type OperationsToolOutput =
 export type OperationsStep = {
   stepNumber: number;
   text: string;
-  status: "completed" | "failed" | "interrupted";
-  toolCalls: Array<{ toolName: string; input: unknown }>;
+  status: "running" | "completed" | "failed" | "interrupted";
+  toolCalls: Array<{ toolName: string; input: unknown; status?: OperationsStep["status"] }>;
   toolResults: Array<{ toolName: string; output?: OperationsToolOutput; error?: string }>;
 };
 
@@ -198,7 +199,7 @@ function hasToolOutputBase(value: Record<string, unknown>) {
     && typeof value.truncated === "boolean";
 }
 
-function isOperationsToolOutput(value: unknown): value is OperationsToolOutput {
+export function isOperationsToolOutput(value: unknown): value is OperationsToolOutput {
   if (!isRecord(value) || typeof value.kind !== "string") return false;
   if (value.kind === "policy-search") return isPolicySearchOutput(value);
   if (!hasToolOutputBase(value)) return false;
@@ -307,17 +308,25 @@ function idempotencyKey() {
   return `copilot-${Date.now()}-${Math.random().toString(36).slice(2)}-key`;
 }
 
-export async function askOperationsCopilot(text: string, signal?: AbortSignal): Promise<OperationsResponse> {
+export async function askOperationsCopilot(text: string, signal?: AbortSignal, onUpdate?: (result: OperationsResponse) => void): Promise<OperationsResponse> {
   const accessToken = await token();
   const response = await fetch(endpoint("/api/ai/admin"), {
     method: "POST",
     signal,
-    headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json", "Content-Type": "application/json" },
+    headers: { Authorization: `Bearer ${accessToken}`, Accept: "text/event-stream", "Content-Type": "application/json" },
     body: JSON.stringify({ id: "wild-oasis-admin-copilot", trigger: "submit-message", messages: [{ id: `operations-user-${Date.now()}`, role: "user", parts: [{ type: "text", text: text.trim() }] }] }),
   });
-  const rawPayload: unknown = await response.json().catch(() => null);
   const traceId = response.headers?.get("X-AI-Trace-Id");
   const receipt = traceId && /^[0-9a-f-]{36}$/i.test(traceId) ? { traceId, token: response.headers.get("X-AI-Feedback-Token") } : undefined;
+  if (response.ok && response.headers.get("Content-Type")?.includes("text/event-stream")) {
+    try {
+      return await readOperationsStream(response, isOperationsToolOutput, onUpdate, signal, receipt);
+    } catch (error) {
+      if (signal?.aborted) throw error;
+      throw new OperationsRequestError("The response was interrupted. Received results are kept; you can ask again.", receipt);
+    }
+  }
+  const rawPayload: unknown = await response.json().catch(() => null);
   if (!response.ok) {
     const message = isRecord(rawPayload) && typeof rawPayload.error === "string"
       ? rawPayload.error

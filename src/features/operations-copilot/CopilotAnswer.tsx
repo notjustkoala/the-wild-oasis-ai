@@ -68,7 +68,7 @@ const Explanation = styled.details`
 function Markdown({ text }: { text: string }) {
   return (
     <Answer>
-      <Suspense fallback={<p role="status">Formatting AI explanation…</p>}>
+      <Suspense fallback={<p style={{ whiteSpace: "pre-wrap" }}>{text}</p>}>
         <ReactMarkdown
           allowedElements={[...ALLOWED_MARKDOWN_ELEMENTS]}
           components={{
@@ -88,19 +88,23 @@ function Markdown({ text }: { text: string }) {
 export default function CopilotAnswer({
   text,
   hasStructuredResults,
+  streaming = false,
+  expanded = streaming,
 }: {
   text: string;
   hasStructuredResults: boolean;
+  streaming?: boolean;
+  expanded?: boolean;
 }) {
   const trimmed = text.trim();
   const content = trimmed
     ? <Markdown text={trimmed} />
-    : <p role="status">No AI explanation was provided.</p>;
+    : streaming ? null : <p role="status">No AI explanation was provided.</p>;
 
   if (!hasStructuredResults) return content;
 
   return (
-    <Explanation>
+    <Explanation open={expanded}>
       <summary>AI explanation</summary>
       {content}
     </Explanation>

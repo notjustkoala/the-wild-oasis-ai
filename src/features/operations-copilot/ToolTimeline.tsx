@@ -33,9 +33,9 @@ const TOOL_LABELS: Record<string, string> = {
 };
 
 export default function ToolTimeline({ steps }: { steps: OperationsStep[] }) {
-  const calls = steps.flatMap((step) => step.toolCalls.map((call) => ({ name: call.toolName, status: step.status })));
+  const calls = steps.flatMap((step) => step.toolCalls.map((call) => ({ name: call.toolName, status: call.status ?? step.status })));
   if (!calls.length) return null;
-  const hasProblem = calls.some((call) => call.status === "failed" || call.status === "interrupted");
+  const hasProblem = calls.some((call) => call.status !== "completed");
 
   return (
     <Activity open={hasProblem}>
