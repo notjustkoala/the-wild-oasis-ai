@@ -9,10 +9,10 @@
 - 当前阶段：Feature06「作品集与简历交付」。
 - 模型迁移：2026-10-04 用户决定暂不替换模型；[GPT-6 迁移计划](GPT6_MIGRATION_PLAN.md) 保留为后续参考。当前继续使用既有 Gemini 与 embedding 配置。
 - 当前状态：F06-R5 功能点 1 的 Production 人工验收已通过；Staff Dashboard `Occupancy rate` 非有限显示修复也已在 deployment `dpl_5TpPMrWcGZiSDj52q9b2SAK3Rd42` 完成 Production 人工验证，状态为 ✅ PASS。用户确认 7/30/90 天筛选均未再出现 `NaN%`、`Infinity%` 或 `-Infinity%`，其他 KPI 无回归。该结论仅关闭本次 Dashboard 缺陷，不扩展为 Feature06 整体完成。
-- 当前执行项：G1 文字截断与滚动条修复已验证并发布。Guest `4970f6d` 对应 Production deployment `dpl_D2yD5ufdvXtGqURzFB7zcg2i9EtU` READY；原正式域名、HTTP 200、新版 JS 提示与 CSS 滚动条均已核对。43 files / 686 tests、lint/typecheck/build 与分段 HTTP fixture 浏览器 4/4 PASS。Staff `dpl_Ecf2gDf4NK1L3gcvnw2jiW1wRdwa` 保持 READY。G1/G1-V/M1 待用户复验，其余人工项保持待验收。
-- 下一步：用户强制刷新 Guest 页面，用三晚 G1 复验卡片与完整简短说明、桌面/窄屏深色细滚动条；原两晚 G1-V 继续核对住宿条件提示、后续政策与说明。真实模型体验结论由用户确认，不把部署/静态检查写成人工通过。
+- 当前执行项：Guest 多轮偏好/每日额度修复已验证并发布，源码 `374a132` / deployment `dpl_B62mX2Q1WZMnz9YaLE6MgMWQNrca` production/Ready，原正式域名、HTTP 200 与新版公开布局已核对。44 files / 705 tests、lint/typecheck/build、分段 HTTP fixture 浏览器 7/7 PASS。已只读确认失败根因是 Gemini 免费每日请求配额耗尽；用户确认首轮完整，G1-F 多轮真实模型复验待配额重置。
+- 下一步：用户强制刷新 Guest 页面，待 Gemini 每日配额重置后复验同一会话的偏好追问；配额未恢复时核对准确提示、保留结果和普通房型入口。首轮说明完整已由用户确认，不把离线或 fixture 通过写成多轮人工通过。
 - 当前阻塞：F06-R5 功能点 1 当前无产品阻塞。Staff/Guest 本地环境仍指向旧开发数据库，无法替代其他 Production 身份与数据验收；Feature06 其余人工验收仍待完成。
-- 正在运行的进程/测试：本轮 Guest 完整检查与浏览器测试已结束，独立 fixture 服务器已停止监听 3100。Guest `npm run check` 43 files / 686 tests、lint/typecheck/build 与流式浏览器 4/4 PASS；Staff 沿用审批修复后 9 files / 117 tests、lint/typecheck/build 与流式浏览器 5/5 的证据。均无新增真实模型调用。
+- 正在运行的进程/测试：本轮 Guest 完整检查与浏览器测试已结束。Guest `npm run check` 44 files / 705 tests、lint/typecheck/build 与流式浏览器 7/7 PASS；已核对上轮遗留的 fixture 进程身份并停止，3100 无监听。Staff 沿用审批修复后 9 files / 117 tests、lint/typecheck/build 与流式浏览器 5/5 的证据。均无新增真实模型调用。
 - 安全边界：GitHub 发布、隔离 Supabase 写入和 Guest 首次 Vercel 发布已完成；任何跨平台 secret 传输都必须有明确授权，且不把 secret、密码和真实邮箱写入 Git、日志或本文件。不重跑付费 live eval；Cron 继续保持失败关闭。
 
 ## 项目与基线
@@ -63,7 +63,7 @@ Feature06 开始前已经存在的 Feature05 改动属于用户资产；本阶�
 | F06-R3 | 独立仓库公开链接稳定化 | 已完成 | 两个独立 GitHub origin 已发布，跨 sibling 文档链接使用固定 `main` 绝对 URL 并通过检查 |
 | F06-R4 | Sequence 权限与 migration 初始化顺序 | 已完成（本地范围） | service_role 获得 `setval` 所需 UPDATE；SQL/合约断言；所有 versioned migrations 按文件名应用且不跳过中间迁移 |
 | F06-R5 | Copilot 中文安全语法、隐私安全备注与结果抽屉可读性 | 功能点 1 Production 人验与 post-tool stop 终检 ✅ PASS；功能点 2 spec ✅ PASS、quality ✅ APPROVED、已发布 | 结构化查询、中文备注 Reject → 新建 approval → Approve 及单步返回审批卡均通过；Staff 抽屉仍待 Production 桌面/窄屏人工 UI 验收 |
-| F06-R6 | 双端实时结果卡片与文字、工具进度、停止/恢复和滚动 | 已实现/验证/部署（两端 Production READY；G1 截断/滚动条已修复，待人工复验） | Guest `4970f6d`：43 files / 686 tests、lint/typecheck/build、分段 HTTP fixture 浏览器 4/4 PASS；原正式域名新版 JS/CSS 已核对。Staff 沿用审批修复证据，保留 Gemini/检索配置与人工审批 |
+| F06-R6 | 双端实时结果卡片与文字、工具进度、停止/恢复和滚动 | 已实现/验证/部署（两端 Production READY；首轮完整用户确认，多轮待配额重置后复验） | Guest `374a132`：44 files / 705 tests、lint/typecheck/build、分段 HTTP fixture 浏览器 7/7 PASS；原正式域名新版配额提示已核对。Staff 沿用审批修复证据，保留 Gemini/检索配置与人工审批 |
 
 ## 已知证据边界
 
@@ -74,6 +74,21 @@ Feature06 开始前已经存在的 Feature05 改动属于用户资产；本阶�
 - 双端已有真实 production URL；Guest 仓库 smoke 已通过，Staff 已有浏览器生产验证，但 Staff 仓库 smoke 本轮受本机 TLS 链路阻塞，不能登记为脚本通过。仍没有可公开演示账号、录屏或三次真人计时证据。
 
 ## 变更日志
+
+### 2026-10-05 — Guest 多轮偏好与每日配额处理修复并发布
+
+- 用户确认上一版首轮回复已完整；同一会话再次问房屋类型偏好时，先返回房型卡，随后显示请求失败并保留已有内容。截图 Reference `55d7d42e-b025-4074-af31-09a3d5d5aa06`，将核对安全运行诊断与多轮路径，不将通用连接提示当成已证实网络故障。
+- 保持现有 Gemini/embedding 与生产住宿规则，修复后沿用用户已授权的生产发布流程；Staff 运行时代码和用户原有 .gitignore 保留。
+- 只读运行记录：failed / provider-unavailable、44969ms、无首段文字、仅 searchAvailableCabins、tool_error_count 0，未读取用户原始输入/输出。生产 CLI 日志仅解析公开诊断字段：HTTP 429、RESOURCE_EXHAUSTED、generate_content_free_tier_requests、GenerateRequestsPerDayPerProjectPerModel-FreeTier；确认免费每日请求配额耗尽，不是已登记的工具失败或用户网络故障。旧截图首轮完整登记为用户确认，仅多轮追问仍失败。
+- 多轮模型输入继续只接受校验后的用户文字、丢弃客户端 assistant/tool 内容；历史与当前问题分别标注，避免把一串旧请求当成尚未回答的请求。保守匹配纯偏好回顾（以用户描述的“我偏好哪些类型的房屋”为回归句），关闭工具，仅根据用户已表达内容生成摘要、不声称偏好已存档；混合推荐、图片、价格和政策请求保留工具路径。已异步请求用户提供失败追问原文，尚未收到。
+- 为 Guest Agent 增加每日配额保护：依据 Google 实际 error.data 里的每日 quotaId 将该 429 转为不重试且无原始请求/响应的安全错误；每分钟 429 与 503 保留既有重试行为，不影响 Staff Agent。UI 对每日额度/临时限流显示允许公开的准确文案，保留已有结果，日额度耗尽不提供立即重试按钮；其他失败也不再默认归因用户连接。
+- 定向 3 files / 55 tests 与 typecheck PASS；实际 Google provider 的模拟 HTTP 429解析、真实 SDK 两步“卡片成功→每日额度拒绝”（恰两次模型步骤、无四轮配额重试）、回顾无工具仅一次生成、路由接线与 UI SSE/HTTP 错误分类通过。未发起新增真实 Gemini 调用，代码不能恢复供应商已耗尽的额度。
+- 完整 `npm run check` exit 0：44 files / 705 tests、lint/typecheck/build PASS。分段 HTTP fixture 浏览器最终 7/7 PASS，覆盖新增桌面/390px 卡片后限额提示、无立即重试及两轮完整文本保留；原有停止、断流和阅读滚动也通过。查看手机限额截图，卡片、提示、输入无横向溢出，深色滚动条保留。
+- 新增两轮短回复用例初次在等待一个未结束的小回复流时失败，finally 关闭 fixture 后已有文字可见；将该用例核对范围明确为两轮完整回复保留，完整结束后核对通过。持续增量、停止/断流的证据仍来自既有独立流式用例，不把此短回复用例写成首段延迟验证。
+- 上轮端口检查在默认沙盒未返回监听详情，本轮发现14:30自建服务器实际仍在运行；已用只读进程信息确认两个 Next 进程属本任务，测试结束后精确停止并在授权环境核对3100无监听。无需停止用户进程。
+- Guest 修复提交 `374a13269a9fa8f3ec677a9cc64740d10822cc6e`（fix: scope concierge follow-ups and handle daily quota limits）已推送原 origin/main，等待 Vercel Git 自动 Production 部署。当前供应商日额度限制仍存在，部署检查不新增真实模型调用。
+- 发布完成：GitHub Vercel status success；CLI inspect `dpl_B62mX2Q1WZMnz9YaLE6MgMWQNrca` 为 production/Ready，创建于 2026-10-05 15:45:05 +08:00、构建52s，alias包含原正式 Guest 域名，Functions仍sin1。正式smoke exit 0 / HTTP200；公开布局 `app/layout-18c5afb0f7d875e8.js` HTTP200，核对每日额度/临时限流文案、保留结果、移除连接归因，以及既有截断提示/滚动条类均通过。
+- 本轮未替换模型、开通计费、重建向量库或新增真实模型调用；应用改动已完成，Gemini免费日额度需供应商重置，不能据此登记G1-F人工通过。Staff运行时代码未修改，用户.gitignore保留。
 
 ### 2026-10-05 — G1 文字截断与滚动条修复并发布
 
