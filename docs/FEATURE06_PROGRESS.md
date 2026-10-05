@@ -9,8 +9,8 @@
 - 当前阶段：Feature06「作品集与简历交付」。
 - 模型迁移：2026-10-04 用户决定暂不替换模型；[GPT-6 迁移计划](GPT6_MIGRATION_PLAN.md) 保留为后续参考。当前继续使用既有 Gemini 与 embedding 配置。
 - 当前状态：F06-R5 功能点 1 的 Production 人工验收已通过；Staff Dashboard `Occupancy rate` 非有限显示修复也已在 deployment `dpl_5TpPMrWcGZiSDj52q9b2SAK3Rd42` 完成 Production 人工验证，状态为 ✅ PASS。用户确认 7/30/90 天筛选均未再出现 `NaN%`、`Infinity%` 或 `-Infinity%`，其他 KPI 无回归。该结论仅关闭本次 Dashboard 缺陷，不扩展为 Feature06 整体完成。
-- 当前执行项：用户已明确授权直接部署双端。Guest 新版已通过 Git 自动部署上线，生产版本已核对；Staff 新版已提交并推送，但仍需官方 CLI 登录认证后直接发布。验收前自审与回归完成，已准备 [逐项验收清单](DUAL_STREAMING_ACCEPTANCE.md)。人工项均待验收。
-- 下一步：等待用户在官方 Vercel device 页面完成登录认证，随后以已有 Production 环境变量远端构建 Staff，核对新代码与正式域名后交付两端人工验收入口。不以 Staff 旧 production 页面验收本地改动。
+- 当前执行项：双端流式新版已部署到原 Production 项目并核对 READY 状态、正式域名及新代码。Guest deployment `dpl_8DexMvyneqjLodx6cd8robHhhaUx`；Staff deployment `dpl_Ecf2gDf4NK1L3gcvnw2jiW1wRdwa`。验收前自审与回归完成，[逐项验收清单](DUAL_STREAMING_ACCEPTANCE.md) 已更新到实际线上版本；人工项均待验收。
+- 下一步：用户从正式 Guest/Staff 入口开始 G1/S1 实时卡片与文字人工验收，再按清单验证停止、断流、滚动、窄屏和手动审批。真实模型体验与持久化结论等待用户确认，不把部署/静态检查写成人工通过。
 - 当前阻塞：F06-R5 功能点 1 当前无产品阻塞。Staff/Guest 本地环境仍指向旧开发数据库，无法替代其他 Production 身份与数据验收；Feature06 其余人工验收仍待完成。
 - 正在运行的进程/测试：本轮测试及自建 Staff fixture dev server 已停止。审批修复后 Staff `npm run check` 9 files / 117 tests、lint/typecheck/build 和流式浏览器 5/5 PASS；Guest 沿用上一轮 42 files / 675 tests 与浏览器 4/4 的证据。实际 SDK 协议核对 3/3 PASS，均无真实模型调用。
 - 安全边界：GitHub 发布、隔离 Supabase 写入和 Guest 首次 Vercel 发布已完成；任何跨平台 secret 传输都必须有明确授权，且不把 secret、密码和真实邮箱写入 Git、日志或本文件。不重跑付费 live eval；Cron 继续保持失败关闭。
@@ -63,7 +63,7 @@ Feature06 开始前已经存在的 Feature05 改动属于用户资产；本阶�
 | F06-R3 | 独立仓库公开链接稳定化 | 已完成 | 两个独立 GitHub origin 已发布，跨 sibling 文档链接使用固定 `main` 绝对 URL 并通过检查 |
 | F06-R4 | Sequence 权限与 migration 初始化顺序 | 已完成（本地范围） | service_role 获得 `setval` 所需 UPDATE；SQL/合约断言；所有 versioned migrations 按文件名应用且不跳过中间迁移 |
 | F06-R5 | Copilot 中文安全语法、隐私安全备注与结果抽屉可读性 | 功能点 1 Production 人验与 post-tool stop 终检 ✅ PASS；功能点 2 spec ✅ PASS、quality ✅ APPROVED、已发布 | 结构化查询、中文备注 Reject → 新建 approval → Approve 及单步返回审批卡均通过；Staff 抽屉仍待 Production 桌面/窄屏人工 UI 验收 |
-| F06-R6 | 双端实时结果卡片与文字、工具进度、停止/恢复和滚动 | 已完成（本地实现/验证；生产待发布与人验） | 两端 check、契约/组件与分段 HTTP fixture 浏览器通过；保留 Gemini/检索配置与人工审批，未提交/部署 |
+| F06-R6 | 双端实时结果卡片与文字、工具进度、停止/恢复和滚动 | 已实现/验证/部署（两端 Production READY；待人工验收） | 两端 check、契约/组件与分段 HTTP fixture 浏览器通过；原生产域名新代码已核对，保留 Gemini/检索配置与人工审批 |
 
 ## 已知证据边界
 
@@ -74,6 +74,15 @@ Feature06 开始前已经存在的 Feature05 改动属于用户资产；本阶�
 - 双端已有真实 production URL；Guest 仓库 smoke 已通过，Staff 已有浏览器生产验证，但 Staff 仓库 smoke 本轮受本机 TLS 链路阻塞，不能登记为脚本通过。仍没有可公开演示账号、录屏或三次真人计时证据。
 
 ## 变更日志
+
+### 2026-10-05 — Staff 部署认证重试
+
+- 用户报告官方 device 页面无法验证旧授权码；已停止旧登录等待并重新发起官方认证。Staff 发布授权继续有效，不重复请求部署许可；新版尚未发布，Guest 已发布结论保持不变。
+- 认证信息只用于临时 CLI 会话，授权码与凭据不写入本记录。完成认证后继续使用原 Staff project 和既有 Production 环境变量构建、发布与版本核对。
+- 新认证已成功，用户确认已授权。CLI project inspect 核对原 Staff project `prj_ZF9gnbzFkAuLIWsqSmnHmqLdHXYP` 及原团队，未新建项目；随后远端 Production 构建与部署 exit 0，READY，自动 alias 到原正式域名。
+- Staff 实际上线版本：源码流式提交 `ae31d38`，部署时 HEAD `56839df`（含上传排除规则与验收文档）；deployment `dpl_Ecf2gDf4NK1L3gcvnw2jiW1wRdwa`，2026-10-05 13:37:46 +08:00，构建 18s。正式域名 inspect 确认 alias/production/Ready；首页与公开 entry `/assets/index-74940f48.js` HTTP 200，新包包含 Stop response、Jump to latest、Recording decision、部分结果保留、SSE 和正确 Guest/BFF production origin。
+- Guest 原生产域名 inspect 也已真实核对：`dpl_8DexMvyneqjLodx6cd8robHhhaUx`，commit `db48b5e`，production/Ready，2026-10-05 13:07:50 +08:00，构建 44s，Functions 保持 sin1。两端正式 smoke exit 0、生产静态新版标识和 exact-origin OPTIONS 通过；无新模型调用、数据库写入或人工验收结果。
+- 发布后按两个实际 deployment ID 查询最近 1h、level:error、最多 100 条的日志：两条命令 exit 0，均返回 0 条 error 记录。这是当前查询窗口的日志结果，不替代真实 AI 交互人工验收。登录/构建/只读核对进程均已结束。
 
 ### 2026-10-05 — F06-R6 双端 Production 发布开始
 

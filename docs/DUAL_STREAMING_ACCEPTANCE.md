@@ -12,14 +12,16 @@
 | 实际 SDK 协议核对 | 本轮用安装的 `ai@7.0.58`、MockLanguageModelV4、ToolLoopAgent 和真实 UI stream serializer 生成流，交给当前 Staff 消费者：查询→文字 2 步、备注卡 1 步、参数错误→文字恢复 2 步，3/3 PASS。无模型网络/数据库调用 |
 | 完整检查 | 当前审批修复后 Staff `npm run check` 9 files / 117 tests、lint/typecheck/build PASS；Guest 无本轮产品修改，沿用上一轮 42 files / 675 tests 和 lint/typecheck/build 的证据 |
 | 浏览器 | 当前 Staff 流式 fixture 5/5 PASS，其中慢审批请求验证提交期间禁止新问题、明确显示 Approving、完成后恢复；其余旧证据为 Staff JSON/安全/布局 7 项及 Guest 流式 4 项通过，不混作本轮重跑。均属于合成数据验证 |
-| 当前待验收版本 | Guest `db48b5e` 已推送 origin/main，Vercel 构建 success，生产首页与新版静态代码已核对；Staff `ae31d38` 已推送 origin/main，但线上仍为旧版，等待官方 CLI 登录认证后直接发布。Staff 现有线上页面暂不能判定本轮改动 |
-| 环境选择 | 用户已明确要求直接部署双端后人工验收，采用完整线上真实 Gemini 验收；发布处理中，未执行新模型调用 |
+| 当前待验收版本 | 两端 Production READY。Guest 源码 `db48b5e`，deployment `dpl_8DexMvyneqjLodx6cd8robHhhaUx`；Staff 流式源码 `ae31d38`、部署时 HEAD `56839df`，deployment `dpl_Ecf2gDf4NK1L3gcvnw2jiW1wRdwa`。正式域名、HTTP 200 与新版静态代码已核对 |
+| 环境选择 | 用户已明确要求直接部署双端后人工验收，采用完整线上真实 Gemini 验收；两端发布完成，部署核对未执行新模型调用 |
 
 相关实现与测试：[员工流式接收器](../src/services/operationsStream.ts)、[员工抽屉](../src/features/operations-copilot/CopilotDrawer.tsx)、[员工分段浏览器用例](../tests/e2e/streaming.spec.ts)、[员工组件用例](../tests/OperationsCopilot.test.tsx)。
 
 ## 环境与顺序
 
-线上完整验收需要先确认本轮两端的新版本已 READY，员工端连接对应 Guest/BFF，且 exact-origin 配置匹配。记录实际 deployment ID、域名和验收日期；仅打开原 production URL 不算版本确认。
+人工验收入口：[Guest Concierge](https://the-wild-oasis-website-ai.vercel.app)、[Staff Operations Copilot](https://the-wild-oasis-ai.vercel.app)。建议首次验收强制刷新页面，避免浏览器沿用旧标签页代码。
+
+2026-10-05 已确认两端本轮 Production READY 和原正式域名的 alias。Guest 构建 44s；Staff 构建 18s。Staff 新 entry 为 `/assets/index-74940f48.js`，包含新增的停止/滚动/审批等待代码，并连接对应 Guest/BFF；BFF 对精确 Staff origin 的 OPTIONS 为 204。两端正式 smoke 为 HTTP 200。这些是部署和只读链路证据，真实 Gemini 的卡片/文字流式体验仍需按下表人工验收。
 
 本地交互验收使用可控 HTTP fixture，不请求真实 Gemini、库存或审批数据库。这一层可以观察停止、断流和滚动，但不替代真实模型与线上代理链路的验证。
 
@@ -47,4 +49,4 @@
 
 ## 当前结论
 
-验收前自审、协议验证和审批修复回归已完成；人工项目均待验收。用户已要求直接部署后验收。Guest 新版已发布到原生产域名；Staff 已提交并推送，待官方 CLI 登录认证后发布。未执行新真实模型调用或数据库写入。
+验收前自审、协议验证和审批修复回归已完成，两端新版均已发布到原生产域名并核对 READY 与静态版本；人工项目均待验收。部署核对没有执行新真实模型调用或数据库写入；后续用户可从 G1/S1 开始反馈。
