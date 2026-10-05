@@ -9,10 +9,10 @@
 - 当前阶段：Feature06「作品集与简历交付」。
 - 模型迁移：2026-10-04 用户决定暂不替换模型；[GPT-6 迁移计划](GPT6_MIGRATION_PLAN.md) 保留为后续参考。当前继续使用既有 Gemini 与 embedding 配置。
 - 当前状态：F06-R5 功能点 1 的 Production 人工验收已通过；Staff Dashboard `Occupancy rate` 非有限显示修复也已在 deployment `dpl_5TpPMrWcGZiSDj52q9b2SAK3Rd42` 完成 Production 人工验证，状态为 ✅ PASS。用户确认 7/30/90 天筛选均未再出现 `NaN%`、`Infinity%` 或 `-Infinity%`，其他 KPI 无回归。该结论仅关闭本次 Dashboard 缺陷，不扩展为 Feature06 整体完成。
-- 当前执行项：G1 错误分类修复已完成并发布。Guest `2b2dde6` 对应 Production deployment `dpl_6vjQ38X6jbRZmMtnbefBt8wVykMj` READY，正式域名新代码与 HTTP 200 已核对；43 files / 682 tests、lint/typecheck/build PASS。Staff `dpl_Ecf2gDf4NK1L3gcvnw2jiW1wRdwa` 保持 READY。G1/G1-V 待用户复验，其余人工项保持待验收。
-- 下一步：用户强制刷新 Guest 页面，先用原两晚 G1-V 核对住宿条件提示、后续政策与说明，再用三晚 G1 复验正常查询流式体验。真实模型体验结论由用户确认，不把部署/静态检查写成人工通过。
+- 当前执行项：G1 文字截断与滚动条修复已验证并发布。Guest `4970f6d` 对应 Production deployment `dpl_D2yD5ufdvXtGqURzFB7zcg2i9EtU` READY；原正式域名、HTTP 200、新版 JS 提示与 CSS 滚动条均已核对。43 files / 686 tests、lint/typecheck/build 与分段 HTTP fixture 浏览器 4/4 PASS。Staff `dpl_Ecf2gDf4NK1L3gcvnw2jiW1wRdwa` 保持 READY。G1/G1-V/M1 待用户复验，其余人工项保持待验收。
+- 下一步：用户强制刷新 Guest 页面，用三晚 G1 复验卡片与完整简短说明、桌面/窄屏深色细滚动条；原两晚 G1-V 继续核对住宿条件提示、后续政策与说明。真实模型体验结论由用户确认，不把部署/静态检查写成人工通过。
 - 当前阻塞：F06-R5 功能点 1 当前无产品阻塞。Staff/Guest 本地环境仍指向旧开发数据库，无法替代其他 Production 身份与数据验收；Feature06 其余人工验收仍待完成。
-- 正在运行的进程/测试：本轮测试及自建 Staff fixture dev server 已停止。审批修复后 Staff `npm run check` 9 files / 117 tests、lint/typecheck/build 和流式浏览器 5/5 PASS；Guest 沿用上一轮 42 files / 675 tests 与浏览器 4/4 的证据。实际 SDK 协议核对 3/3 PASS，均无真实模型调用。
+- 正在运行的进程/测试：本轮 Guest 完整检查与浏览器测试已结束，独立 fixture 服务器已停止监听 3100。Guest `npm run check` 43 files / 686 tests、lint/typecheck/build 与流式浏览器 4/4 PASS；Staff 沿用审批修复后 9 files / 117 tests、lint/typecheck/build 与流式浏览器 5/5 的证据。均无新增真实模型调用。
 - 安全边界：GitHub 发布、隔离 Supabase 写入和 Guest 首次 Vercel 发布已完成；任何跨平台 secret 传输都必须有明确授权，且不把 secret、密码和真实邮箱写入 Git、日志或本文件。不重跑付费 live eval；Cron 继续保持失败关闭。
 
 ## 项目与基线
@@ -63,7 +63,7 @@ Feature06 开始前已经存在的 Feature05 改动属于用户资产；本阶�
 | F06-R3 | 独立仓库公开链接稳定化 | 已完成 | 两个独立 GitHub origin 已发布，跨 sibling 文档链接使用固定 `main` 绝对 URL 并通过检查 |
 | F06-R4 | Sequence 权限与 migration 初始化顺序 | 已完成（本地范围） | service_role 获得 `setval` 所需 UPDATE；SQL/合约断言；所有 versioned migrations 按文件名应用且不跳过中间迁移 |
 | F06-R5 | Copilot 中文安全语法、隐私安全备注与结果抽屉可读性 | 功能点 1 Production 人验与 post-tool stop 终检 ✅ PASS；功能点 2 spec ✅ PASS、quality ✅ APPROVED、已发布 | 结构化查询、中文备注 Reject → 新建 approval → Approve 及单步返回审批卡均通过；Staff 抽屉仍待 Production 桌面/窄屏人工 UI 验收 |
-| F06-R6 | 双端实时结果卡片与文字、工具进度、停止/恢复和滚动 | 已实现/验证/部署（两端 Production READY；待人工验收） | 两端 check、契约/组件与分段 HTTP fixture 浏览器通过；原生产域名新代码已核对，保留 Gemini/检索配置与人工审批 |
+| F06-R6 | 双端实时结果卡片与文字、工具进度、停止/恢复和滚动 | 已实现/验证/部署（两端 Production READY；G1 截断/滚动条已修复，待人工复验） | Guest `4970f6d`：43 files / 686 tests、lint/typecheck/build、分段 HTTP fixture 浏览器 4/4 PASS；原正式域名新版 JS/CSS 已核对。Staff 沿用审批修复证据，保留 Gemini/检索配置与人工审批 |
 
 ## 已知证据边界
 
@@ -74,6 +74,19 @@ Feature06 开始前已经存在的 Feature05 改动属于用户资产；本阶�
 - 双端已有真实 production URL；Guest 仓库 smoke 已通过，Staff 已有浏览器生产验证，但 Staff 仓库 smoke 本轮受本机 TLS 链路阻塞，不能登记为脚本通过。仍没有可公开演示账号、录屏或三次真人计时证据。
 
 ## 变更日志
+
+### 2026-10-05 — G1 文字截断与滚动条修复并发布
+
+- 用户截图显示房型卡已返回，后续说明在句中结束且聊天区仍使用原生白色滚动条；G1 未通过，继续修复。
+- 对截图 Reference 的 ai_runs 做单条只读查询：completed、error_code null、duration 12569ms、output_tokens 1144、仅 searchAvailableCabins、tool_error_count 0。未查询个人信息、原始提示或响应；无数据库写入。该记录排除已登记的工具失败/服务超时，但旧记录未存 finishReason，不能将推断写成已测结束原因。
+- 源码每步 maxOutputTokens 为 900，Agent 多步总 token 与截图长说明相符；客户端未使用 SDK finishReason，可能将 length 结束静默显示为完成。正在增加有界输出预算、简洁推荐说明和截断状态提示，并为聊天区增加与现有配色一致的滚动条。
+- 修复将每步上限调为 2400，并要求最多三个简短推荐、完整结尾，减少重复卡片事实；通过 finish-only message metadata 传递安全结束原因，遇 length 保留卡片/文字、明确未完成并仅在用户点击时重试，不自动增加模型调用。
+- 聊天区增加 min-height 0 / overscroll containment 与局部深色、细窄、圆角滚动条；Firefox 使用 scrollbar-width/color，Chromium 使用对应伪元素；悬停采用现有 accent 配色，保留稳定 gutter。不修改普通页面全局滚动条。
+- 定向 3 files / 40 tests 与 typecheck PASS：实际 SDK 对 stop/length 的结束 metadata、provider 输出预算传递、路由接线、截断时保留卡片/文字和显式重试、正常结束不误报警均通过。完整 `npm run check` exit 0：43 files / 686 tests、lint/typecheck/build PASS。
+- 分段 HTTP fixture 浏览器 4/4 PASS：桌面与 390px 的卡片/文字先到、停止、断流保留结果、阅读位置保持和跳到最新均通过。人工查看本轮手机截图，聊天滚动条已是局部深色细条、无白色轨道/箭头，输入和结果可读；未把 fixture 截图写成生产真实模型验收。测试结束并停止独立服务器，3100 无监听。
+- Guest 修复提交 `4970f6d59c2d84dd60e8ab5b4a263f52ef0a0732` 已推送原 origin/main，Vercel Git 自动生产构建 `dpl_D2yD5ufdvXtGqURzFB7zcg2i9EtU` 正在核对。未更换模型/embedding、未重建向量库、未修改 Staff 运行时代码。
+- 发布核对完成：GitHub Vercel status success；CLI inspect 新 deployment 与原正式域名均指向 `dpl_D2yD5ufdvXtGqURzFB7zcg2i9EtU`，production/Ready，创建于 2026-10-05 14:36:14 +08:00、构建 56s，Functions 保持 sin1。Guest 正式 smoke exit 0 / HTTP 200。
+- 正式页面实际引用的布局 `app/layout-3df5fa0b1c6d2285.js` HTTP 200，包含未完成提示、显式 Retry last request 和 concierge-scrollbar；两份公开 CSS `564abf97420637a5.css` / `f13cf6b2de807180.css` 均 HTTP 200，核对 thin/color、深色 color-scheme 与 WebKit thumb 样式通过。该证据证明新版静态资源已上线，真实 Gemini 是否完整结束仍待用户 G1 复验。
 
 ### 2026-10-05 — G1 人工失败反馈开始修复
 
