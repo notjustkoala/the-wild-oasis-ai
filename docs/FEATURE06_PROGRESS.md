@@ -9,8 +9,8 @@
 - 当前阶段：Feature06「作品集与简历交付」。
 - 模型迁移：2026-10-04 用户决定暂不替换模型；[GPT-6 迁移计划](GPT6_MIGRATION_PLAN.md) 保留为后续参考。当前继续使用既有 Gemini 与 embedding 配置。
 - 当前状态：F06-R5 功能点 1 的 Production 人工验收已通过；Staff Dashboard `Occupancy rate` 非有限显示修复也已在 deployment `dpl_5TpPMrWcGZiSDj52q9b2SAK3Rd42` 完成 Production 人工验证，状态为 ✅ PASS。用户确认 7/30/90 天筛选均未再出现 `NaN%`、`Infinity%` 或 `-Infinity%`，其他 KPI 无回归。该结论仅关闭本次 Dashboard 缺陷，不扩展为 Feature06 整体完成。
-- 当前执行项：双端流式新版已部署到原 Production 项目并核对 READY 状态、正式域名及新代码。Guest deployment `dpl_8DexMvyneqjLodx6cd8robHhhaUx`；Staff deployment `dpl_Ecf2gDf4NK1L3gcvnw2jiW1wRdwa`。验收前自审与回归完成，[逐项验收清单](DUAL_STREAMING_ACCEPTANCE.md) 已更新到实际线上版本；人工项均待验收。
-- 下一步：用户从正式 Guest/Staff 入口开始 G1/S1 实时卡片与文字人工验收，再按清单验证停止、断流、滚动、窄屏和手动审批。真实模型体验与持久化结论等待用户确认，不把部署/静态检查写成人工通过。
+- 当前执行项：G1 错误分类修复已完成并发布。Guest `2b2dde6` 对应 Production deployment `dpl_6vjQ38X6jbRZmMtnbefBt8wVykMj` READY，正式域名新代码与 HTTP 200 已核对；43 files / 682 tests、lint/typecheck/build PASS。Staff `dpl_Ecf2gDf4NK1L3gcvnw2jiW1wRdwa` 保持 READY。G1/G1-V 待用户复验，其余人工项保持待验收。
+- 下一步：用户强制刷新 Guest 页面，先用原两晚 G1-V 核对住宿条件提示、后续政策与说明，再用三晚 G1 复验正常查询流式体验。真实模型体验结论由用户确认，不把部署/静态检查写成人工通过。
 - 当前阻塞：F06-R5 功能点 1 当前无产品阻塞。Staff/Guest 本地环境仍指向旧开发数据库，无法替代其他 Production 身份与数据验收；Feature06 其余人工验收仍待完成。
 - 正在运行的进程/测试：本轮测试及自建 Staff fixture dev server 已停止。审批修复后 Staff `npm run check` 9 files / 117 tests、lint/typecheck/build 和流式浏览器 5/5 PASS；Guest 沿用上一轮 42 files / 675 tests 与浏览器 4/4 的证据。实际 SDK 协议核对 3/3 PASS，均无真实模型调用。
 - 安全边界：GitHub 发布、隔离 Supabase 写入和 Guest 首次 Vercel 发布已完成；任何跨平台 secret 传输都必须有明确授权，且不把 secret、密码和真实邮箱写入 Git、日志或本文件。不重跑付费 live eval；Cron 继续保持失败关闭。
@@ -74,6 +74,19 @@ Feature06 开始前已经存在的 Feature05 改动属于用户资产；本阶�
 - 双端已有真实 production URL；Guest 仓库 smoke 已通过，Staff 已有浏览器生产验证，但 Staff 仓库 smoke 本轮受本机 TLS 链路阻塞，不能登记为脚本通过。仍没有可公开演示账号、录屏或三次真人计时证据。
 
 ## 变更日志
+
+### 2026-10-05 — G1 人工失败反馈开始修复
+
+- 用户提供两张 Guest 生产截图：Availability 显示超时错误，但后续 Hotel policy 卡和两晚不满足最少三晚的说明仍正常完成。G1 登记为用户反馈失败，正在检查真实工具错误的分类与流式展示，避免把业务校验失败伪装为超时。
+- 先检查当前 SDK 源码、工具与流转换器，再补充回归测试；修复后沿用已授权的生产发布流程。保持 Gemini/向量检索和既有生产配置。
+- 根因由源码及当前 ai@7.0.58 实际序列化确认：assertStayDates 对不满足最少三晚的两晚输入抛出业务错误；SDK 将该工具错误交给路由 onError，原回调对所有异常返回超时文案，随后 Agent 正常继续取政策并给解释。
+- 修复使用应用校验专用 ConciergeInputError，格式化回调分别输出业务条件提示、真实超时和安全技术失败；UI 将应用业务提示显示为中性 amber 提示，保留后续说明。未隐藏真实失败或清空已收到的卡片/文字，也不传递数据库/provider 原始异常。
+- 定向 4 files / 45 tests PASS，加真实 ToolLoopAgent + MockLanguageModelV4 + UI serializer 两步回归 1/1 PASS，核对 tool-output-error 为业务提示、政策结果与中文说明完整、无虚假 timeout/全局 error；无外部模型或数据库调用。typecheck PASS，已再增加实际路由回调接线回归，正在完整 check。
+- 原 G1 清单的两晚输入与当前最少三晚规则不匹配；正常查询改为 2027-01-10 至 2027-01-13，保留原两晚输入为 G1-V 业务校验复验，不通过改生产住宿规则回避问题。
+- Guest 完整 npm run check exit 0：lint/typecheck、43 files / 682 tests、Next production build PASS。既有四处 img、旧 Browserslist 和 Windows webpack cache rename warning 未阻止构建。没有新增真实模型/数据库调用。
+- 修复提交 `2b2dde6d43ac01316852d2d3aa57a72209430548`（fix: distinguish stay validation from concierge timeouts）已推送原 origin/main，等待 Git 自动 Production 构建与 alias 核对。Staff 无运行时代码修改；用户原有 .gitignore 保留。
+- 生产发布完成：GitHub Vercel status success；CLI inspect `dpl_6vjQ38X6jbRZmMtnbefBt8wVykMj` 为 production/Ready，创建于 2026-10-05 13:57:59 +08:00、构建 47s，alias 包含原正式 Guest 域名，Functions 保持 sin1。Guest 正式 smoke exit 0 / HTTP 200；公开新版布局 `app/layout-e7d922e9d30acc8f.js` HTTP 200，包含业务提示前缀、amber 提示样式与既有 Jump to latest。待用户真实 Gemini 复验，不提前登记 G1 PASS。
+- 对该新版 deployment 的最近 1h、level:error、最多 100 条日志只读查询 exit 0 / 0 条 error；仅代表当前查询窗口。最终 Markdown 链接 82 local links / 33 files 与两仓库 diff --check PASS。测试/构建/核对进程均已结束，G1/G1-V 真实模型人工复验仍待用户反馈。
 
 ### 2026-10-05 — Staff 部署认证重试
 

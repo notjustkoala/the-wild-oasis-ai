@@ -12,7 +12,7 @@
 | 实际 SDK 协议核对 | 本轮用安装的 `ai@7.0.58`、MockLanguageModelV4、ToolLoopAgent 和真实 UI stream serializer 生成流，交给当前 Staff 消费者：查询→文字 2 步、备注卡 1 步、参数错误→文字恢复 2 步，3/3 PASS。无模型网络/数据库调用 |
 | 完整检查 | 当前审批修复后 Staff `npm run check` 9 files / 117 tests、lint/typecheck/build PASS；Guest 无本轮产品修改，沿用上一轮 42 files / 675 tests 和 lint/typecheck/build 的证据 |
 | 浏览器 | 当前 Staff 流式 fixture 5/5 PASS，其中慢审批请求验证提交期间禁止新问题、明确显示 Approving、完成后恢复；其余旧证据为 Staff JSON/安全/布局 7 项及 Guest 流式 4 项通过，不混作本轮重跑。均属于合成数据验证 |
-| 当前待验收版本 | 两端 Production READY。Guest 源码 `db48b5e`，deployment `dpl_8DexMvyneqjLodx6cd8robHhhaUx`；Staff 流式源码 `ae31d38`、部署时 HEAD `56839df`，deployment `dpl_Ecf2gDf4NK1L3gcvnw2jiW1wRdwa`。正式域名、HTTP 200 与新版静态代码已核对 |
+| 当前待验收版本 | 两端 Production READY。Guest G1 修复源码 `2b2dde6`，deployment `dpl_6vjQ38X6jbRZmMtnbefBt8wVykMj`（2026-10-05 13:57:59 +08:00，构建 47s）；Staff 流式源码 `ae31d38`、部署时 HEAD `56839df`，deployment `dpl_Ecf2gDf4NK1L3gcvnw2jiW1wRdwa`。正式域名、HTTP 200 与新版静态代码已核对；G1 修复完整检查 43 files / 682 tests、lint/typecheck/build PASS |
 | 环境选择 | 用户已明确要求直接部署双端后人工验收，采用完整线上真实 Gemini 验收；两端发布完成，部署核对未执行新模型调用 |
 
 相关实现与测试：[员工流式接收器](../src/services/operationsStream.ts)、[员工抽屉](../src/features/operations-copilot/CopilotDrawer.tsx)、[员工分段浏览器用例](../tests/e2e/streaming.spec.ts)、[员工组件用例](../tests/OperationsCopilot.test.tsx)。
@@ -21,7 +21,7 @@
 
 人工验收入口：[Guest Concierge](https://the-wild-oasis-website-ai.vercel.app)、[Staff Operations Copilot](https://the-wild-oasis-ai.vercel.app)。建议首次验收强制刷新页面，避免浏览器沿用旧标签页代码。
 
-2026-10-05 已确认两端本轮 Production READY 和原正式域名的 alias。Guest 构建 44s；Staff 构建 18s。Staff 新 entry 为 `/assets/index-74940f48.js`，包含新增的停止/滚动/审批等待代码，并连接对应 Guest/BFF；BFF 对精确 Staff origin 的 OPTIONS 为 204。两端正式 smoke 为 HTTP 200。这些是部署和只读链路证据，真实 Gemini 的卡片/文字流式体验仍需按下表人工验收。
+2026-10-05 已确认两端本轮 Production READY 和原正式域名的 alias。Guest G1 修复构建 47s，新布局为 `app/layout-e7d922e9d30acc8f.js`，含业务提示与原有流式代码；Staff 构建 18s，新 entry 为 `/assets/index-74940f48.js`，包含新增的停止/滚动/审批等待代码，并连接对应 Guest/BFF。此前已核对 BFF 对精确 Staff origin 的 OPTIONS 为 204；两端正式 smoke 为 HTTP 200。这些是部署和只读链路证据，真实 Gemini 的卡片/文字流式体验仍需按下表人工验收。
 
 本地交互验收使用可控 HTTP fixture，不请求真实 Gemini、库存或审批数据库。这一层可以观察停止、断流和滚动，但不替代真实模型与线上代理链路的验证。
 
@@ -31,7 +31,8 @@
 
 | ID | 操作 | 通过条件 | 人工状态 |
 | --- | --- | --- | --- |
-| G1 | Guest 发问：`2027-01-10 到 2027-01-12，2 位客人，总预算 1200 美元，希望安静一些。请查询可用小屋并说明理由。` | 请求结束前可看到查询活动；结果到达即出现房型卡或明确无结果；文字逐段追加，无重复和乱码。无结果本身不算失败 | 待验收 |
+| G1 | Guest 发问：`2027-01-10 到 2027-01-13，2 位客人，总预算 1200 美元，希望安静一些。请查询可用小屋并说明理由。` | 请求结束前可看到查询活动；结果到达即出现房型卡或明确无结果；文字逐段追加，无重复和乱码。当前最少三晚，此输入为三晚；无结果本身不算失败 | 原两晚输入用户反馈失败；修复后待复验 |
+| G1-V | Guest 使用原输入：`2027-01-10 到 2027-01-12，2 位客人，总预算 1200 美元，希望安静一些。请查询可用小屋并说明理由。` | 两晚违反当前最少三晚规则时显示住宿条件/调整日期提示，后续政策卡与说明可正常出现；不显示虚假的超时提示。真正技术失败仍须说明 | 待复验 |
 | S1 | Staff 发问：`查看今天入住的订单和未付款风险，并说明需要优先处理哪些。` | 先显示工具活动；校验后的订单/风险卡到达即出现；文字与卡片同屏可读，引用来自结果。没有匹配订单时有清晰空状态 | 待验收 |
 | C1 | 两端在收到部分文字/卡片后点击 Stop，再提交另一条不同问题 | 追加停止，已有内容保留，未完成工具不再显示查询中；输入恢复，新请求不混入旧请求内容。关面板再打开，也不会在后台继续追加旧响应 | 待验收 |
 | C2 | 桌面浏览器在收到部分结果后将网络临时切为 Offline，再恢复网络 | 已收到内容不消失；失败提示说明内容可能不完整；恢复后可重新提问，普通业务入口仍可使用 | 待验收 |
