@@ -1,0 +1,15 @@
+.env*
+.vercel/
+node_modules/
+dist/
+dist-ssr/
+.git/
+.github/
+.playwright-cli/
+coverage/
+test-results/
+output/
+tests/
+docs/
+*.log
+*.tsbuildinfo
