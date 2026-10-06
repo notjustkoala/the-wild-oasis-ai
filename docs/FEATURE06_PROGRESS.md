@@ -7,12 +7,12 @@
 
 - 最后更新：2026-10-06（Asia/Shanghai）。
 - 当前阶段：Feature06「作品集与简历交付」。
-- 模型迁移：2026-10-06 用户已明确同意生成与 embedding 一起迁到 OpenAI。正在实施三个生成工作流 `gpt-6-luna` / Responses / low，以及 `text-embedding-3-small` / 768维；政策文档需重新向量化。当前本地/生产尚无OpenAI密钥，已异步请求用户在Vercel配置并确定真实验证/重建预算；继续完成离线代码与测试。运行中的生产模型尚未切换。
+- 模型迁移：原OpenAI/Luna迁移分支已保存；用户因支付/地区限制改为开通百炼，并要求连接北京业务空间API。本地已加入三个工作流qwen3.7-plus非思考Chat和独立text-embedding-v4/768配置，用户确认已在ignored服务端文件保存密钥。6次真实API连接检查全部通过，生产仍保持Google。
 - 当前状态：F06-R5 功能点 1 的 Production 人工验收已通过；Staff Dashboard `Occupancy rate` 非有限显示修复也已在 deployment `dpl_5TpPMrWcGZiSDj52q9b2SAK3Rd42` 完成 Production 人工验证，状态为 ✅ PASS。用户确认 7/30/90 天筛选均未再出现 `NaN%`、`Infinity%` 或 `-Infinity%`，其他 KPI 无回归。该结论仅关闭本次 Dashboard 缺陷，不扩展为 Feature06 整体完成。
-- 当前执行项：OpenAI迁移本地代码与验证已完成，待凭据/预算进入真实验证与生产切换。Guest完整检查46 files / 720 tests、lint/typecheck/build PASS，真实OpenAI adapter的模拟HTTP/SSE契约通过，生产库回滚事务验证权限与模型隔离通过。当前线上仍是 `374a132` / `dpl_B62mX2Q1WZMnz9YaLE6MgMWQNrca`，没有把本地实现登记为生产已迁移。
-- 下一步：用户配置Guest/BFF Vercel Production/Preview与本地OPENAI_API_KEY并回复真实验证/重建总预算；随后验证账户Luna权限、生成并校准OpenAI查询/文档向量，应用已验证的SQL与整库原子入库，Preview通过后切换生产并继续双端人工验收。当前没有新的真实模型调用。
+- 当前执行项：百炼生成接入与线上向量数据库适配已完成，待具体Vercel项目的敏感密钥传输授权后部署。Guest完整check exit0：49 files/745 tests、lint/typecheck/build PASS；Staff完整check 9 files/117 tests、lint/typecheck/build PASS。Guest迁移提交5f93edc已发布到codex/dashscope-migration分支。生产库7文档/16块全部是百炼向量，24检索/RLS校准场景通过；BFF原生产仍是374a132/dpl_B62mX2Q1WZMnz9YaLE6MgMWQNrca，尚未切换生成模型。
+- 下一步：等待用户确认将本地DASHSCOPE_API_KEY传输到原Guest/BFF项目prj_3iA1n6o6PAnniDEjIeY6htShT6uR的Production/Preview敏感环境变量；随后执行scripts/configure-dashscope-vercel.mjs、原生产项目部署与scripts/verify-dashscope-production.mjs验证顾客流式/检索、普通账号拒绝、真实Staff SOP和Admin Briefing。原域名与CORS保持一致，临时验证身份必须退出并清理。
 - 当前阻塞：F06-R5 功能点 1 当前无产品阻塞。Staff/Guest 本地环境仍指向旧开发数据库，无法替代其他 Production 身份与数据验收；Feature06 其余人工验收仍待完成。
-- 正在运行的进程/测试：本轮 Guest 完整检查与浏览器测试已结束。Guest `npm run check` 44 files / 705 tests、lint/typecheck/build 与流式浏览器 7/7 PASS；已核对上轮遗留的 fixture 进程身份并停止，3100 无监听。Staff 沿用审批修复后 9 files / 117 tests、lint/typecheck/build 与流式浏览器 5/5 的证据。均无新增真实模型调用。
+- 正在运行的进程/测试：均已结束，无新dev服务器。Guest49 files/745 tests与Staff9 files/117 tests完整check PASS；已完成真实百炼连接及生产数据库回滚校准/持久入库，尚无新版线上BFF/浏览器证据。
 - 安全边界：GitHub 发布、隔离 Supabase 写入和 Guest 首次 Vercel 发布已完成；任何跨平台 secret 传输都必须有明确授权，且不把 secret、密码和真实邮箱写入 Git、日志或本文件。不重跑付费 live eval；Cron 继续保持失败关闭。
 
 ## 项目与基线
@@ -64,6 +64,7 @@ Feature06 开始前已经存在的 Feature05 改动属于用户资产；本阶�
 | F06-R4 | Sequence 权限与 migration 初始化顺序 | 已完成（本地范围） | service_role 获得 `setval` 所需 UPDATE；SQL/合约断言；所有 versioned migrations 按文件名应用且不跳过中间迁移 |
 | F06-R5 | Copilot 中文安全语法、隐私安全备注与结果抽屉可读性 | 功能点 1 Production 人验与 post-tool stop 终检 ✅ PASS；功能点 2 spec ✅ PASS、quality ✅ APPROVED、已发布 | 结构化查询、中文备注 Reject → 新建 approval → Approve 及单步返回审批卡均通过；Staff 抽屉仍待 Production 桌面/窄屏人工 UI 验收 |
 | F06-R6 | 双端实时结果卡片与文字、工具进度、停止/恢复和滚动 | 已实现/验证/部署（两端 Production READY；首轮完整用户确认，多轮待配额重置后复验） | Guest `374a132`：44 files / 705 tests、lint/typecheck/build、分段 HTTP fixture 浏览器 7/7 PASS；原正式域名新版配额提示已核对。Staff 沿用审批修复证据，保留 Gemini/检索配置与人工审批 |
+| F06-R7 | 百炼生成与政策向量全面迁移、双端上线 | 代码/真实向量/生产数据库已完成；Vercel敏感密钥授权待回复 | Guest5f93edc已发布独立分支；745测试、Staff117测试PASS；7文档/16块百炼向量已原子入库，24真实检索/RLS场景PASS；生成切换与真实线上验收待执行 |
 
 ## 已知证据边界
 
@@ -74,6 +75,42 @@ Feature06 开始前已经存在的 Feature05 改动属于用户资产；本阶�
 - 双端已有真实 production URL；Guest 仓库 smoke 已通过，Staff 已有浏览器生产验证，但 Staff 仓库 smoke 本轮受本机 TLS 链路阻塞，不能登记为脚本通过。仍没有可公开演示账号、录屏或三次真人计时证据。
 
 ## 变更日志
+
+### 2026-10-06 — 全面迁移与线上向量适配
+
+- 用户明确要求全面迁移、向量数据库重新适配并同步线上，作为代码发布、原生产项目数据库变更与部署授权；生成统一qwen3.7-plus，检索text-embedding-v4/768，保留权限和人工审批。
+- 已确认原Vercel Production数据库为fadfglcobmxxsawxlmpb，原production provider为google；政策库初始0文档/0块。未写旧本地开发数据库。
+- 新模型重建7文档16块，实际embedding输入755 tokens，按北京原价估算0.0003775元。初次prepare继承旧Google/OAuth代理失败；百炼改为默认直连，仅显式DASHSCOPE_HTTPS_PROXY生效。原OAuth代理设置保留。
+- 原0.55/0.04阈值真实校准会漏掉中文问题；新DashScope profile采用0.45/0.20并按固定脱敏英语政策主题检索、限制对应文档，早餐价格与饮食过敏分别检索。不同政策主题有独立证据查询，不能用模型记忆补齐。
+- 24固定中英文/角色检索场景全部通过真实百炼向量与Postgres RPC/RLS回滚验证；5条隐私/未知主题请求在embedding前拒绝，最终8个唯一主题查询输入91 tokens，估算0.0000455元。顾客/普通角色只见6份公开政策，staff/admin见7份；伪造user_metadata.role=admin不扩权，anon/authenticated无批量同步权限。证据已存Guest tests/ai/dashscope-retrieval-calibration.json，不把合成JWT角色事务登记为真实登录E2E。
+- 持久迁移20261006033225_openai_policy_embedding_identity已通过Supabase apply_migration激活，并在同一迁移事务service_role批量同步全部7文档/16块；复查全部为text-embedding-v4/768与dashscope-policy-document-v1，模型检索函数为SECURITY INVOKER，原RLS保留。未修改酒店预订、用户身份、价格或Cron。
+- 将本地DASHSCOPE_API_KEY写入原Vercel项目Production/Preview的操作被automatic approval review拒绝：虽有线上迁移授权，仍要求对此具体敏感密钥/目的地的明确授权。已通过异步问题请求用户确认项目prj_3iA1n6o6PAnniDEjIeY6htShT6uR的敏感变量传输；等待期间不重试或绕过，不复制密钥。继续完成本地测试、文档及发布准备。当前尚未Vercel配置/部署。
+- 最终代码检查：Guest49 files/745 tests、lint/typecheck/production build PASS，Staff9 files/117 tests、lint/typecheck/Vite build PASS，双端Markdown链接与git diff check PASS。只有原有img、webpack缓存、Browserslist、React Router future flag警告；没有新业务错误。
+- 生产验收脚本已准备：只读真实酒店工具、顾客政策检索、临时ordinary/staff/admin真实Auth身份、普通角色拒绝、Staff SOP流式与Admin Briefing；临时身份退出并删除。通过原Supabase CLI在进程内存确认生产测试凭据可用，未打印/落盘密钥，尚未创建临时账号或调用待部署BFF。
+- Guest提交5f93edc73a0a6523a8ca97f66b3265efdc98b980（feat: migrate generation and policy retrieval to DashScope），29文件，已发布codex/dashscope-migration。首次push被自动审批认为目的地未验证而拒绝；随后读取origin并以GitHub连接核验当前用户notjustkoala，确认9月26日记录已明确授权原origin/main、远端main374a132及旧迁移分支f2dd35b均一致，依据新证据重试后push成功。未改旧upstream或原main。
+
+### 2026-10-06 — 开始接入百炼业务空间接口
+
+- 用户提供北京业务空间专属OpenAI兼容baseURL并要求连接使用，作为百炼接入授权；未收到实际密钥，异步请求用户在Guest ignored .env.development.local配置DASHSCOPE_API_KEY及1元/5元首次真实测试预算，不要求聊天传送密钥。
+- 基线Guest为codex/openai-luna-migration/f2dd35b clean，Staff保留用户.gitignore及前次进度记录修改。复用AI SDK与Supabase技能核对官方接口和本地SDK源码；没有启动其他代理。
+- 新增显式AI_PROVIDER=dashscope，三个工作流仅接受qwen3.7-plus；采用官方有严格JSON Schema的Chat Completions接口，显式关闭默认thinking。URL只接受北京官方HTTPS兼容路径，禁止凭据/query/非标准端口与HTTP重定向。
+- 政策向量使用独立版本化DashScope profile：text-embedding-v4/768，文档/查询指令身份不与OpenAI/Google混用。Embedding最多10条一批、无自动重试、有界超时，归一化仅total_tokens的usage与有index的返回顺序。当前正在离线类型和契约验证，未运行真实模型、持久数据库迁移或生产部署。
+- 用户回复“已配置”，随后仅核对密钥存在性true；本地非敏感生成模型、baseURL、AI_POLICY_PROVIDER已配置，原有凭据保留，未传输到Vercel或输出密钥。用户未指定具体金额，本轮按照尝试连接的授权采用1元保守预算：发送前逐请求估算并预留费用，有界token、最多8请求、无重试；不是平台账单硬上限。
+- 真实 `ai:check-dashscope -- --live --max-cny 1` exit0：流式18段完整结束，1次固定只读测试工具结果回传后完整回答，纯偏好回顾，严格Briefing JSON（food-allergy/high），中英文输入768维向量全部通过。合计6请求，生成输入572/输出439 tokens，embedding输入6 tokens；按北京原价估算生成0.004656元、embedding0.000003元，非真实账单。预留估算0.057381元，无数据库读写；工具数据为合成fixture，不将其当作真实酒店/生产端到端验收。
+- 新增零数据库写入的连接检查及DashScope语料prepare脚本；dry-run显示7文档16块、模型text-embedding-v4/768。20个新增离线测试覆盖实际SDK请求/HTTP/SSE、工具结果回放、严格schema、10+6向量分批及顺序、欠费/免费额度即停与TPM错误区分、凭据/预算失败关闭。现有OpenAI准备脚本保持强制独立profile，避免使用百炼模型调用OpenAI。
+- 检查过程修复新增测试hook返回值类型、Node项目路径被jsdom打包器改写的问题；最终lint/typecheck与48 files/740 tests PASS，production build进行中。两个仓库Markdown链接检查PASS，政策静态检查7文档16块PASS。未持久入库、未修改Staff前端、未部署生产，也未声明真实检索阈值校准通过。
+- 最终完整npm run check exit0：48 files/740 tests、lint/typecheck、生产编译及14静态页生成PASS；只保留既有4个img警告、Windows webpack cache EPERM与Browserslist陈旧提示。所有进程结束。创建独立本地codex/dashscope-migration分支保存未提交变更，原OpenAI已发布分支及生产main未修改；本地.env与output均确认ignored。
+- 本轮连接使用已验证完成：用户可使用既有本地启动命令读取百炼配置；完整政策检索/线上迁移是后续阶段，需要实际向量重建与检索校准、目标库原子入库及Vercel配置/生产复验，当前均未执行。不会把6次连接检查当成双端生产验收。
+
+### 2026-10-06 — 国内可用 API 候选评估
+
+- 用户询问其他能够覆盖本项目功能的 API。本轮仅核查官方能力、价格与支付资料，未选择或实施新供应商。
+- 优先候选：百炼中国站北京区域 qwen3.7-plus 覆盖工具调用、SSE 流式及严格 JSON Schema；text-embedding-v4 支持中英文、多语种和显式768维。现有供应商适配、向量身份隔离、原子重建与流式UI工作可复用，但必须适配参数、embedding每批最多10条限制、校准检索阈值并实测生产网络；同维向量不能跨模型复用。
+- 官方短上下文原价：qwen3.7-plus 输入2元/百万tokens、输出8元/百万tokens。假设单任务所有模型步骤合计1万输入及2千计费输出，则生成费估算0.036元；该数字是价格演算，非项目实际usage/账单，不含embedding、重试、基础设施。
+- 百炼替代候选为 DeepSeek 生成 API 配合另一供应商embedding，或火山方舟生成与embedding；本轮未核到DeepSeek官方embedding接口，方舟严格JSON Schema文档标为Beta且需限定支持型号，不登记为项目已兼容。
+- 中国站阿里云充值官方支持支付宝、银联/网银等；这些在线充值渠道不支持信用卡，需使用符合账号实名要求的支付宝或借记卡等实际可用方式。不能将其描述为已解决原信用卡拒付或保证付款成功。
+- 依据：[百炼模型与定价](https://help.aliyun.com/zh/model-studio/qwen3-7-plus)、[严格结构化输出](https://help.aliyun.com/zh/model-studio/qwen-structured-output)、[Responses接口](https://help.aliyun.com/zh/model-studio/qwen-api-via-openai-responses)、[Embedding接口](https://help.aliyun.com/zh/model-studio/embedding-interfaces-compatible-with-openai)、[在线充值](https://help.aliyun.com/zh/user-center/use-alipay-online-banking-to-recharge-online)、[DeepSeek Responses](https://api-docs.deepseek.com/api/create-response/)、[方舟结构化输出Beta](https://docs.volcengine.com/docs/ark/structured-output-beta?lang=zh)。
+- 未发起付费调用、修改运行时代码、写入持久数据库或部署；OpenAI迁移准备分支仍为f2dd35b，当前生产继续Google。真实回答质量、工具行为、结构化输出与检索质量均待选型后的实际验证。
 
 ### 2026-10-06 — 开始实施 Luna 与 OpenAI embedding 迁移
 
@@ -91,6 +128,8 @@ Feature06 开始前已经存在的 Feature05 改动属于用户资产；本阶�
 - 最终本地与Vercel Production密钥存在性复查仍false，预算回复尚未收到。未进行付费模型调用、持久数据库变更或生产发布；Guest准备独立分支/草稿PR保存可审阅代码，避免未经真实验证切换原生产。
 - Guest迁移代码已保存并上传独立分支 `codex/openai-luna-migration`，提交 `f2dd35b18958d57c1bc955284039a4d183e63d00`（feat: migrate generation and policy embeddings to OpenAI），37 files；工作区clean。原生产main仍为374a132。GitHub连接器创建draft PR返回403 Resource not accessible by integration，未创建PR；分支/提交已成功发布，可用GitHub创建入口审阅，PR权限不作为模型接入/后续发布的必需阻塞。
 - 目前必要外部输入仍是：本地与原Guest Vercel Production/Preview的OPENAI_API_KEY、真实验证/重建总预算。持久SQL、OpenAI真实模型与检索校准、7文档16块向量入库及生产部署均未执行；所有检查进程已结束，无新dev服务器。
+- 账户开通遇到支付信息添加失败；记录仅保存技术阻塞，不保存卡号、银行账户、账单地址等信息。报错是通用拒付提示，不能确定银行/平台的具体原因。已按OpenAI Docs核对官方API支持地区名单（未包含中国大陆），官方直连地区资格需重新评估；保留迁移分支与原生产。
+- 只读核查Vercel AI Gateway文档与官方v1/models目录，确认存在openai/gpt-6-luna（language）与openai/text-embedding-3-small（embedding）且支持系统凭据统一计费；公开资料尚不能确认中国大陆使用/付款资格，不当作已可用方案、不发起收费或模型调用、不改路由。后续先确认合法可用服务条件，再决定迁移渠道。
 
 ### 2026-10-06 — 全 Luna 迁移可行性补充
 

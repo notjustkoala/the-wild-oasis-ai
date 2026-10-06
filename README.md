@@ -85,7 +85,7 @@ Configure these browser-safe Vite variables in `.env.local`:
 
 `VITE_SUPABASE_ANON_KEY` is accepted only for compatibility with an existing
 legacy project. Never put a secret/service-role key in a `VITE_` variable.
-The admin browser never receives the Gemini key. It sends the current Supabase
+The admin browser never receives the model API key. It sends the current Supabase
 access token to the BFF, where the employee is revalidated before any insight
 is read, generated, or reviewed.
 
@@ -109,7 +109,7 @@ token and a natural-language question to the customer application's
 `/api/ai/admin` BFF. Results are rendered as KPI cards, cabin performance bars,
 booking lists, and a tool timeline. The server exposes only five fixed,
 bounded read tools and never sends guest names, contact details, raw
-observations, or complete booking rows to Gemini.
+observations, or complete booking rows to the model provider.
 
 Booking KPIs match the dashboard reporting basis: the range uses `created_at`,
 cancelled bookings remain included, and `totalRevenue` sums `totalPrice` only
