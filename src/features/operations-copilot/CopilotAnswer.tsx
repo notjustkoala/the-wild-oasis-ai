@@ -67,7 +67,7 @@ const Explanation = styled.details`
 
 function Markdown({ text }: { text: string }) {
   return (
-    <Answer>
+    <Answer aria-label="Copilot answer">
         <ReactMarkdown
           allowedElements={[...ALLOWED_MARKDOWN_ELEMENTS]}
           components={{
