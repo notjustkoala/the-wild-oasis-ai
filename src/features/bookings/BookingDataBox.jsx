@@ -115,9 +115,11 @@ function BookingDataBox({ booking }) {
     hasBreakfast,
     observations,
     isPaid,
-    guests: { fullName: guestName, email, country, countryFlag, nationalID },
-    cabins: { name: cabinName },
+    guests,
+    cabins,
   } = booking;
+  const { fullName: guestName, email, country, countryFlag, nationalID } = guests ?? {};
+  const cabinName = cabins?.name ?? "Unavailable";
 
   return (
     <StyledBookingDataBox>
@@ -140,6 +142,7 @@ function BookingDataBox({ booking }) {
 
       <Section>
         <Guest>
+          {!guests ? <p>Guest details unavailable for this account.</p> : <>
           {countryFlag && <Flag src={countryFlag} alt={`Flag of ${country}`} />}
           <p>
             {guestName} {numGuests > 1 ? `+ ${numGuests - 1} guests` : ""}
@@ -148,6 +151,7 @@ function BookingDataBox({ booking }) {
           <p>{email}</p>
           <span>&bull;</span>
           <p>National ID {nationalID}</p>
+          </>}
         </Guest>
 
         {observations && (
