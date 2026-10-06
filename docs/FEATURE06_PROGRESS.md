@@ -5,12 +5,12 @@
 
 ## 当前接续点
 
-- 最后更新：2026-10-05（Asia/Shanghai）。
+- 最后更新：2026-10-06（Asia/Shanghai）。
 - 当前阶段：Feature06「作品集与简历交付」。
-- 模型迁移：2026-10-04 用户决定暂不替换模型；[GPT-6 迁移计划](GPT6_MIGRATION_PLAN.md) 保留为后续参考。当前继续使用既有 Gemini 与 embedding 配置。
+- 模型迁移：2026-10-06 用户已明确同意生成与 embedding 一起迁到 OpenAI。正在实施三个生成工作流 `gpt-6-luna` / Responses / low，以及 `text-embedding-3-small` / 768维；政策文档需重新向量化。当前本地/生产尚无OpenAI密钥，已异步请求用户在Vercel配置并确定真实验证/重建预算；继续完成离线代码与测试。运行中的生产模型尚未切换。
 - 当前状态：F06-R5 功能点 1 的 Production 人工验收已通过；Staff Dashboard `Occupancy rate` 非有限显示修复也已在 deployment `dpl_5TpPMrWcGZiSDj52q9b2SAK3Rd42` 完成 Production 人工验证，状态为 ✅ PASS。用户确认 7/30/90 天筛选均未再出现 `NaN%`、`Infinity%` 或 `-Infinity%`，其他 KPI 无回归。该结论仅关闭本次 Dashboard 缺陷，不扩展为 Feature06 整体完成。
-- 当前执行项：Guest 多轮偏好/每日额度修复已验证并发布，源码 `374a132` / deployment `dpl_B62mX2Q1WZMnz9YaLE6MgMWQNrca` production/Ready，原正式域名、HTTP 200 与新版公开布局已核对。44 files / 705 tests、lint/typecheck/build、分段 HTTP fixture 浏览器 7/7 PASS。已只读确认失败根因是 Gemini 免费每日请求配额耗尽；用户确认首轮完整，G1-F 多轮真实模型复验待配额重置。
-- 下一步：用户强制刷新 Guest 页面，待 Gemini 每日配额重置后复验同一会话的偏好追问；配额未恢复时核对准确提示、保留结果和普通房型入口。首轮说明完整已由用户确认，不把离线或 fixture 通过写成多轮人工通过。
+- 当前执行项：OpenAI迁移本地代码与验证已完成，待凭据/预算进入真实验证与生产切换。Guest完整检查46 files / 720 tests、lint/typecheck/build PASS，真实OpenAI adapter的模拟HTTP/SSE契约通过，生产库回滚事务验证权限与模型隔离通过。当前线上仍是 `374a132` / `dpl_B62mX2Q1WZMnz9YaLE6MgMWQNrca`，没有把本地实现登记为生产已迁移。
+- 下一步：用户配置Guest/BFF Vercel Production/Preview与本地OPENAI_API_KEY并回复真实验证/重建总预算；随后验证账户Luna权限、生成并校准OpenAI查询/文档向量，应用已验证的SQL与整库原子入库，Preview通过后切换生产并继续双端人工验收。当前没有新的真实模型调用。
 - 当前阻塞：F06-R5 功能点 1 当前无产品阻塞。Staff/Guest 本地环境仍指向旧开发数据库，无法替代其他 Production 身份与数据验收；Feature06 其余人工验收仍待完成。
 - 正在运行的进程/测试：本轮 Guest 完整检查与浏览器测试已结束。Guest `npm run check` 44 files / 705 tests、lint/typecheck/build 与流式浏览器 7/7 PASS；已核对上轮遗留的 fixture 进程身份并停止，3100 无监听。Staff 沿用审批修复后 9 files / 117 tests、lint/typecheck/build 与流式浏览器 5/5 的证据。均无新增真实模型调用。
 - 安全边界：GitHub 发布、隔离 Supabase 写入和 Guest 首次 Vercel 发布已完成；任何跨平台 secret 传输都必须有明确授权，且不把 secret、密码和真实邮箱写入 Git、日志或本文件。不重跑付费 live eval；Cron 继续保持失败关闭。
@@ -74,6 +74,32 @@ Feature06 开始前已经存在的 Feature05 改动属于用户资产；本阶�
 - 双端已有真实 production URL；Guest 仓库 smoke 已通过，Staff 已有浏览器生产验证，但 Staff 仓库 smoke 本轮受本机 TLS 链路阻塞，不能登记为脚本通过。仍没有可公开演示账号、录屏或三次真人计时证据。
 
 ## 变更日志
+
+### 2026-10-06 — 开始实施 Luna 与 OpenAI embedding 迁移
+
+- 用户明确同意将生成模型与embedding一起迁到OpenAI；按现有计划实施三个生成工作流统一Luna，不加入自动Sol升级。采用成本优先的text-embedding-3-small，显式768维，保持现有向量列维度；旧Google向量必须重新生成，不认为同维即可混用。
+- 基线Guest `374a132` clean；Staff `cc66d4d`，用户.gitignore与本轮迁移评估两份Markdown尚未提交，保留。使用OpenAI Docs、Vercel AI SDK与env-vars、Supabase指导核对官方接口和本地实现，不输出密钥。
+- 只读检查本地与原Guest/BFF Vercel Production，均未发现OPENAI_API_KEY。已异步请求用户在Production/Preview配置服务端密钥、确定真实模型验证与向量重建的总预算；无密钥/预算期间不进行付费调用，继续必要的代码与离线验证。
+- 现有入库工具将仅版本/内容相同判为unchanged，未比较embedding身份；现有检索RPC也无embedding模型过滤。实施中修复模型切换导致不重建/混合向量的风险，并准备受控的整体切换，保留RLS与public/staff范围。
+- 明确生产目标：在无本地.env覆盖的隔离目录读取原Vercel生产配置，确认数据库为 `fadfglcobmxxsawxlmpb`；有本地.env的env run会被旧开发配置覆盖，不能用于定位生产。生产现有policy_documents / chunks均0；本地治理语料为7份文档/16块，不将旧开发向量当成已在生产存在。
+- 安装固定 `@ai-sdk/openai@4.0.46`，与现有 `ai@7.0.58`、Google SDK共享provider@4.0.7。初次最新4.0.84的readonly类型不兼容，已换为精确兼容版本；未升级整个SDK家族。Responses能力检测支持GPT6，离线请求验证low/store:false/Standard/有界推理+输出预算（Concierge/Operations6144，Briefing4096）正确，OpenAI分支拒绝Sol。
+- 增加Operations独立resolver及对应预检/遥测身份，Briefing配置变更纳入缓存identity；文档与查询embedding固定OpenAI small/768，检查输出长度/有限值。更改仅运行于明确的AI_PROVIDER=openai配置，旧生成分支保留显式配置；生产环境尚未切换。
+- 入库计划比较model/dimensions/指令身份与分块状态，模型切换会强制重算同内容/版本的向量；整库通过sync_policy_documents_batch一次事务激活。新增版本化迁移 `20261006033225_openai_policy_embedding_identity.sql`：model-scoped SECURITY INVOKER检索、旧RPC只查Google向量、service-only批量同步，追加nullable推理/缓存/配置遥测字段，保留现有RLS。
+- 在实际生产项目执行DDL与两个合成public/staff文档的rollback-only事务：anon只能见public、新旧模型不混查、anon无批量写权限均通过；随后只读确认policy_documents仍0、新函数/新增usage字段均0，未留下DDL/测试数据。持久迁移和真实向量入库尚未执行。
+- SDK实际OpenAI序列化的Responses文本、两步function output、SSE→UI、Briefing strict JSON、OpenAI embedding、配置/缓存/遥测与provider错误隐私测试通过。OpenAI insufficient_quota不重试、不保存原始APICallError请求体/响应体；Guest提示额度用尽且不提供立即重试。完整check最终exit0：46 files / 720 tests、lint/typecheck/build PASS，原有非致命img/webpack缓存警告保留。
+- 新增 `policies:prepare-openai`：dry-run无凭据/模型/数据库调用，显示7文档16块；prepare必须有密钥和显式max-usd，生成ignored output里的带模型身份、usage和hash语料，不连接数据库。UTF8字节保守估算embedding输入费约$0.000077，仅是价格假设估算，不是账单或整次迁移费用；真实检索阈值0.55/0.04尚未用OpenAI校准，不能部署前省略此步。
+- 最终本地与Vercel Production密钥存在性复查仍false，预算回复尚未收到。未进行付费模型调用、持久数据库变更或生产发布；Guest准备独立分支/草稿PR保存可审阅代码，避免未经真实验证切换原生产。
+- Guest迁移代码已保存并上传独立分支 `codex/openai-luna-migration`，提交 `f2dd35b18958d57c1bc955284039a4d183e63d00`（feat: migrate generation and policy embeddings to OpenAI），37 files；工作区clean。原生产main仍为374a132。GitHub连接器创建draft PR返回403 Resource not accessible by integration，未创建PR；分支/提交已成功发布，可用GitHub创建入口审阅，PR权限不作为模型接入/后续发布的必需阻塞。
+- 目前必要外部输入仍是：本地与原Guest Vercel Production/Preview的OPENAI_API_KEY、真实验证/重建总预算。持久SQL、OpenAI真实模型与检索校准、7文档16块向量入库及生产部署均未执行；所有检查进程已结束，无新dev服务器。
+
+### 2026-10-06 — 全 Luna 迁移可行性补充
+
+- 用户询问按原计划把两个 AI 项目全部迁至 Luna、不使用 Sol。使用 OpenAI Docs 核对官方 Luna 模型、价格、GPT-6 迁移说明和限额，并检查当前 BFF provider/三个工作流的实际实现。
+- 结论：Concierge、Copilot、Briefing 可统一 `gpt-6-luna` / Responses / 显式 low；这是基于官方接口能力与项目工具边界的可行性判断，未验证质量等价或账户模型权限。原 Sol 推荐属于能力余量选择，不是技术依赖；单模型方案不自动升级/回退到 Sol。
+- 原计划新增单 Luna 变体、拟实施配置、仍需完成的 adapter/契约/评测/部署阶段；补充当前 Concierge 2400 输出上限与偏好回顾/每日配额修复基线，保留原混合模型设计作为历史依据。没有修改生成代码或部署。
+- 沿用 Google embedding / 768 维可保留向量库，Google 检索依赖仍存在；完全移除 Google 需要独立 embedding 迁移，不能将 Luna 当向量化模型。Standard 短上下文的 $0.10 输入 / $0.50 输出每百万 tokens 与示例成本已注明来源、假设和费用边界；OpenAI API 需计费并仍有账户限额。
+- 本轮未调用付费模型、安装依赖、处理密钥、修改数据库/生产配置或部署；只更新迁移计划与统一记录，不把讨论可行性视为已启动生产迁移。
+- 用户追问 Google 日限额对检索的影响：源码核对确认政策查询必须先在线生成 Google 查询向量，embedding 失败会在进入数据库检索前返回 insufficient-evidence，没有纯关键词备用链；健康的 Luna 可继续说明无法确认政策。生成模型额度不等于 embedding 模型额度耗尽；配额随模型且按项目管理，账号当前 embedding 额度未查询。计划已补充残余依赖与完全移除 Google 时的独立 embedding/重建向量需求，未实施此扩展。
 
 ### 2026-10-05 — Guest 多轮偏好与每日配额处理修复并发布
 

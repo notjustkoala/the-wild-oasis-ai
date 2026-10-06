@@ -1,10 +1,56 @@
 # Wild Oasis 双项目 GPT-6 迁移计划
 
-制定日期：2026-10-04（Asia/Shanghai）。状态：计划已完成；用户已决定暂不实施模型替换，当前优先完善双端流式体验。实施与模型效果均未验证。
+制定日期：2026-10-04；实施更新：2026-10-06（Asia/Shanghai）。状态：用户已同意三个生成工作流与embedding一起迁至OpenAI；本地代码/离线检查与数据库回滚验证已完成，真实调用、向量校准/激活及生产切换待密钥与预算。原混合模型计划保留为历史设计。
 
 范围为 `17-the-wild-oasis-ai`（Staff）和 `21-the-wild-oasis-website-ai`（Guest/BFF）。模型接入统一在 Guest/BFF 实施；Staff 负责跨端契约与实际使用验收。阶段用时为单人有效工作时间估计，不包含账户准备、付费评测授权和人工验收等待。
 
-## 建议模型与选择依据
+## 2026-10-06 补充：三个生成工作流全部使用 Luna
+
+### 当前实施与剩余步骤
+
+- 接入已实现：OpenAI Responses、Luna/low/Standard/store:false；Concierge与Copilot总输出预算6144、Briefing4096（包含推理预算），维持既有硬超时。Operations有独立配置与一致的预检/遥测，Briefing缓存区分effort。
+- embedding已实现为`text-embedding-3-small` / 768，替换Google查询与文档生成；同维模型转换仍强制重新生成。SQL按模型/指令身份筛选、保持public/staff RLS，并整批原子入库。
+- 当前证据：Guest 46files/720tests、lint/typecheck/build PASS；新SQL在实际生产项目的rollback-only事务验证通过且没有持久变更。尚无Luna真实质量或OpenAI语义检索校准证据。
+- 密钥仅放Guest/BFF Vercel Production/Preview与本地ignored`.env.development.local`；Vercel Sensitive密钥不能导出，故本地需另配置同一OpenAI项目密钥。Staff浏览器无需模型密钥。真实验证与重建总预算待用户回复。
+- 已准备7政策文档/16块；实际生产项目`fadfglcobmxxsawxlmpb`当前政策表为空。`npm run policies:prepare-openai -- --dry-run`无远端调用；`--prepare --max-usd <预算>`只生成ignored artifact并记录usage/hash、零数据库写入。真实查询向量需校准现有0.55/0.04阈值后再激活。
+- 后续顺序：核对账户/网络→有预算的Luna关键样本与embedding准备/校准→持久SQL迁移→针对已核对生产项目执行原子全语料入库→真实RLS/检索与Preview跨端验收→生产切换和回退核对。禁止混用本地旧开发库作为生产目标。
+
+用户因 Gemini 免费每日额度频繁耗尽，询问是否可将两个项目统一迁移到 `gpt-6-luna`，不使用 Sol。**技术上可行，建议作为成本优先的迁移目标；质量结论仍需项目样本验证。** 以下为原计划的单模型变体，原 Sol/Luna 对照方案保留为历史设计依据。
+
+| 工作流 | 单模型方案 | 首轮验证重点 |
+| --- | --- | --- |
+| Guest Concierge | `gpt-6-luna`，显式 `low` | 中文多轮、偏好回顾不重复查房、政策引用、卡片后完整说明、取消和限流恢复 |
+| Staff Operations Copilot | `gpt-6-luna`，显式 `low` | 多工具协同、受控中文备注、审批卡、Reject/Approve、草稿成功后停止；必要时只比较同一 Luna 的 `medium` |
+| Staff 风险 Briefing | `gpt-6-luna`，显式 `low` | 固定 JSON/Zod、过敏等高风险漏报、severity/actionItems、25 秒截止 |
+
+官方 Luna 页面确认支持 Streaming、Function calling、Structured outputs；支持 `none` / `low` / `medium` 等 effort，默认 `medium`。本方案使用 Responses 承载带推理的工具调用，起步显式设置 `low`。这是接口能力依据，不等于本项目质量已通过。[Luna 模型](https://developers.openai.com/api/docs/models/gpt-6-luna)、[GPT-6 迁移参数](https://developers.openai.com/api/docs/guides/latest-model)。
+
+原计划 M0–M4 继续适用，改动为：M1 的三项生成模型均设为 Luna；M3 从 Sol/Luna 横向比较改为 Luna 对既有业务基线及必要的 effort 对照；关键验收门槛保持不变。不设置自动 Sol 升级/付费回退。未达标场景先调整有界提示、工具门控或 Luna effort，仍未达标则不发布该场景。当前 provider 仅支持 Google/Gateway，仍需原计划的 OpenAI adapter 与参数/工具契约适配，不能只替换 Gemini 模型字符串。
+
+拟实施配置（当前代码尚不支持这些 OpenAI 配置）：
+
+```dotenv
+AI_PROVIDER=openai
+AI_CONCIERGE_MODEL=gpt-6-luna
+AI_CONCIERGE_REASONING_EFFORT=low
+AI_OPERATIONS_MODEL=gpt-6-luna
+AI_OPERATIONS_REASONING_EFFORT=low
+AI_BOOKING_INSIGHT_MODEL=gpt-6-luna
+AI_BOOKING_INSIGHT_REASONING_EFFORT=low
+# OPENAI_API_KEY 仅配置在 Guest/BFF 服务端。
+```
+
+“全部使用 Luna”指三个生成工作流。政策向量化仍为 `gemini-embedding-2` / 768 维；沿用现有文档与查询 embedding 时无需重新生成向量库，但 Google embedding 仍有独立依赖与配额。若目标是完全移除 Google，则另选 embedding 模型并将文档/查询同步迁移、重新向量化和校准检索；Luna 不作为 embedding 模型替代品。[Embedding 文档](https://developers.openai.com/api/docs/guides/embeddings)。
+
+用户进一步询问 Google 限额是否仍影响检索：生成模型额度耗尽不等于 embedding 额度必然耗尽，Google 限额随模型变化、应用于项目，实际以 AI Studio 配额为准。[Google 限额](https://ai.google.dev/gemini-api/docs/rate-limits)。但本项目每次政策查询先执行 `embedPolicyQuery`、再执行数据库混合检索；Google embedding 失败时不会进入数据库检索，也没有不依赖 embedding 的关键词备用路径。当前 catch 返回 `insufficient-evidence`，健康的生成模型可说明无法确认政策；库存/报价等数据库工具和偏好回顾不需要 Google embedding。若目标是让所有 Google 额度问题都不能阻断政策检索，建议把独立 embedding provider 迁移与检索失败分类/降级纳入后续方案；此扩展需要重建文档向量，不能承诺只切生成即可移除全部 Google 依赖。尚未实施。
+
+2026-10-06 核对 Standard 短上下文：Luna 每百万 tokens 普通输入 $0.10、输出 $0.50，对应 Sol 的普通输入/输出单位价格的 1/20。假设一次任务的所有模型步骤合计 10,000 普通输入 tokens 与 2,000 计费输出 tokens，则生成费用约 $0.002，1,000 次同条件任务约 $2；这是算术示例，不是项目实测或费用上限，未包含 embedding、重试额外用量、数据库和部署费用。[官方价格](https://developers.openai.com/api/docs/pricing)。
+
+Luna API 的 Free 层不支持；必须核对 API 计费、模型权限和实际账户限额。迁移后生成不再消耗 Gemini 免费生成日额度，但 OpenAI 仍有账户/项目请求、token 和支出限制，不能承诺无限使用。[Luna 限额](https://developers.openai.com/api/docs/models/gpt-6-luna)、[限额规则](https://developers.openai.com/api/docs/guides/rate-limits)。
+
+本轮仅更新方案与共享进度；未安装 adapter、修改运行时默认模型、读取/配置密钥、开通计费、调用付费模型或改变生产部署。
+
+## 原方案：建议模型与选择依据（2026-10-04）
 
 **主模型候选为 `gpt-6.1-sol`；风险 Briefing 优先评测 `gpt-6-luna`。** 若必须只配置一种生成模型，先评测 Sol。最终按各工作流的成功率、响应速度和每个成功任务成本决定，当前结论属于根据源码任务复杂度作出的建议。
 
@@ -41,6 +87,8 @@ Sol 的普通输入/输出单价是 Astra 的五分之一；总费用仍取决�
 | Guest `tests/live/feature05.live.test.ts` | 10 个 Concierge 场景；真实模型、合成业务工具、开发库遥测 | 扩充 Copilot/Briefing；修正只有 input/output 单价的成本公式 |
 | Guest `app/_ai/providers/policy-embedding-model.ts`、`policy-rag.config.json` | `gemini-embedding-2`，768 维 | 本次生成模型迁移保留此检索依赖与 Google embedding 凭据 |
 | Staff 前端 | 通过 BFF 使用 Briefing、Copilot 与审批 | 用现有组件验证卡片、取消、错误恢复、Approve/Reject 和窄屏布局 |
+
+2026-10-06 补充基线：Guest 已发布 `374a132`，Concierge 输出上限已从制定时的 900 调为 2400，并新增 length 提示、偏好回顾工具门控和 Gemini 每日配额保护；Operations 仍为 1200。迁移验证应覆盖这些新行为，并重新核对推理与可见输出共用预算，不能直接采用上表旧额度。当前离线完整检查为 44 files / 705 tests、HTTP fixture 浏览器 7/7；这些不是 Luna 实测证据。
 
 2026-10-04 静态核查：Staff HEAD `3291c09`，存在既有 `.gitignore` 修改；Guest HEAD `0bc8484`，工作区干净。文档中的 Gemini `3.6-flash` 与源码默认 `3.8-flash` 不一致，实施前必须记录每个部署环境实际配置。历史报告保留原模型，不批量替换旧模型字符串。
 
