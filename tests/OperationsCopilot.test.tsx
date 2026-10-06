@@ -121,8 +121,8 @@ describe("Operations Copilot drawer", () => {
     expect(screen.getByRole("status")).toHaveTextContent(/begin/i);
     await userAction(() => user.type(screen.getByRole("textbox"), "Show this week's metrics"));
     await userAction(() => user.click(screen.getByRole("button", { name: "Ask Copilot" })));
-    expect(await screen.findByText("There are two active bookings.")).not.toBeVisible();
-    await waitFor(() => expect(screen.getByRole("button", { name: "Ask Copilot" })).not.toBeDisabled());
+    expect(await screen.findByText("There are two active bookings.")).toBeVisible();
+    await waitFor(() => expect(screen.getByRole("textbox")).toBeEnabled());
     expect(screen.getByText("Bookings")).toBeVisible();
     const activity = screen.getByText("Data activity · 1 tool").closest("details");
     expect(activity).not.toHaveAttribute("open");
@@ -186,7 +186,7 @@ describe("Operations Copilot drawer", () => {
       resolveRequest?.({ text: "Done", steps: [] });
     });
     expect(await screen.findByText("Done")).toBeVisible();
-    await waitFor(() => expect(screen.getByRole("button", { name: "Ask Copilot" })).not.toBeDisabled());
+    await waitFor(() => expect(screen.getByRole("textbox")).toBeEnabled());
   });
 
   it("shows approval actions for a draft and sends the chosen decision", async () => {
@@ -219,7 +219,7 @@ describe("Operations Copilot drawer", () => {
     const status = action === "approve" ? "executed" : "rejected";
     await act(async () => finishDecision({ status }));
     expect(screen.getByText(`Decision: ${status}.`)).toBeVisible();
-    expect(screen.getByRole("button", { name: "Ask Copilot" })).toBeEnabled();
+    expect(screen.getByRole("textbox")).toBeEnabled();
   });
 
   it("does not show approval success when response validation rejects a malformed payload", async () => {
@@ -238,7 +238,7 @@ describe("Operations Copilot drawer", () => {
     expect(screen.getByRole("button", { name: "Approve note" })).not.toBeDisabled();
   });
 
-  it("clears an old result when the next request fails", async () => {
+  it("keeps an old result and questions when the next request fails", async () => {
     ask.mockResolvedValueOnce({ text: "First answer", steps: [] }).mockRejectedValueOnce(new Error("BFF unavailable"));
     const user = userEvent.setup();
     render(<MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}><CopilotDrawer /></MemoryRouter>);
@@ -247,12 +247,39 @@ describe("Operations Copilot drawer", () => {
     await userAction(() => user.type(input, "First question"));
     await userAction(() => user.click(screen.getByRole("button", { name: "Ask Copilot" })));
     expect(await screen.findByText("First answer")).toBeVisible();
-    await waitFor(() => expect(screen.getByRole("button", { name: "Ask Copilot" })).not.toBeDisabled());
+    await waitFor(() => expect(screen.getByRole("textbox")).toBeEnabled());
     await userAction(() => user.type(input, "Second question"));
     await userAction(() => user.click(screen.getByRole("button", { name: "Ask Copilot" })));
     expect(await screen.findByRole("alert")).toHaveTextContent("BFF unavailable");
-    await waitFor(() => expect(screen.getByRole("button", { name: "Ask Copilot" })).not.toBeDisabled());
-    expect(screen.queryByText("First answer")).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole("textbox")).toBeEnabled());
+    expect(screen.getByText("First answer")).toBeVisible();
+    expect(screen.getByText("First question")).toBeVisible();
+    expect(screen.getByText("Second question")).toBeVisible();
+    expect(ask.mock.calls[1][3]).toEqual(["First question"]);
+    await userAction(() => user.click(screen.getByRole("button", { name: "Close operations copilot" })));
+    await userAction(() => user.click(screen.getByRole("button", { name: /operations copilot/i })));
+    expect(screen.getByText("First answer")).toBeVisible();
+    expect(screen.getByText("Second question")).toBeVisible();
+  });
+
+  it("keeps an older approval attached to its own turn after a later answer", async () => {
+    ask.mockResolvedValueOnce({ text: "Draft ready.", steps: [{ stepNumber: 0, status: "completed", text: "", toolCalls: [], toolResults: [{ toolName: "addBookingInternalNote", output: { kind: "internal-note-approval", approvalId: "00000000-0000-0000-0000-000000000001", bookingId: 1, note: "Synthetic note.", status: "pending", facts: [], sourceIds: [], truncated: false } }] }] })
+      .mockResolvedValueOnce({ text: "Second read-only answer.", steps: [] });
+    decide.mockResolvedValue({ status: "rejected" });
+    const user = userEvent.setup();
+    render(<MemoryRouter><CopilotDrawer /></MemoryRouter>);
+    await userAction(() => user.click(screen.getByRole("button", { name: /operations copilot/i })));
+    await userAction(() => user.type(screen.getByRole("textbox"), "Draft a synthetic note"));
+    await userAction(() => user.click(screen.getByRole("button", { name: "Ask Copilot" })));
+    await waitFor(() => expect(screen.getByRole("textbox")).toBeEnabled());
+    await userAction(() => user.type(screen.getByRole("textbox"), "Explain the policy"));
+    await userAction(() => user.click(screen.getByRole("button", { name: "Ask Copilot" })));
+    expect(await screen.findByText("Second read-only answer.")).toBeVisible();
+    await userAction(() => user.click(screen.getByRole("button", { name: "Reject draft" })));
+    expect(decide).toHaveBeenCalledWith("00000000-0000-0000-0000-000000000001", "reject");
+    const turns = screen.getAllByLabelText("Conversation turn");
+    expect(within(turns[0]).getByText("Decision: rejected.")).toBeVisible();
+    expect(within(turns[1]).queryByText(/Decision:/)).not.toBeInTheDocument();
   });
 
   it("labels and focuses the question, traps focus, closes on Escape, and restores launcher focus", async () => {
@@ -267,17 +294,17 @@ describe("Operations Copilot drawer", () => {
 
     close.focus();
     await userAction(() => user.tab({ shift: true }));
-    expect(screen.getByRole("link", { name: "Continue with Bookings" })).toHaveFocus();
-    await userAction(() => user.tab({ shift: true }));
     expect(question).toHaveFocus();
+    await userAction(() => user.tab({ shift: true }));
+    expect(screen.getByRole("link", { name: "Continue with Bookings" })).toHaveFocus();
 
     await userAction(() => user.type(question, "Show arrivals"));
     const submit = screen.getByRole("button", { name: "Ask Copilot" });
     submit.focus();
     await userAction(() => user.tab());
-    expect(screen.getByRole("link", { name: "Continue with Bookings" })).toHaveFocus();
-    await userAction(() => user.tab());
     expect(close).toHaveFocus();
+    await userAction(() => user.tab());
+    expect(screen.getByRole("link", { name: "Continue with Bookings" })).toHaveFocus();
 
     await userAction(() => user.keyboard("{Escape}"));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
@@ -378,7 +405,7 @@ describe("Operations Copilot drawer", () => {
     const approval = await screen.findByText("Internal note · Booking #699");
     const metrics = screen.getByRole("heading", { name: "Summary metrics" });
     const bookings = screen.getByText("No matching arrivals or bookings needing attention were found.");
-    const explanation = screen.getByText("AI explanation");
+    const explanation = screen.getByText("No matching bookings.");
     const activity = screen.getByText("Data activity · 4 tools");
     const footer = screen.getByRole("link", { name: "Continue with Bookings" });
     const before = (first: Element, second: Element) => Boolean(first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING);

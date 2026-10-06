@@ -75,7 +75,7 @@ test("a streamed note needs explicit approval after generation finishes", async 
   await expect(page.getByLabel("Ask an operational question")).toBeDisabled();
   release();
   await expect(page.getByText("Decision: executed.")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Ask Copilot" })).toBeEnabled();
+  await expect(page.getByLabel("Ask an operational question")).toBeEnabled();
   expect(decisions).toBe(1);
 });
 
@@ -92,5 +92,5 @@ test("streaming does not pull a reader down and Jump to latest resumes following
   await expect.poll(() => content.evaluate((element) => element.scrollHeight - element.scrollTop - element.clientHeight)).toBeLessThanOrEqual(80);
   await stream.write({ type: "text-end", id: "text" }, { type: "finish-step" }, { type: "finish", finishReason: "stop" });
   await stream.finish();
-  await expect(page.getByRole("button", { name: "Ask Copilot" })).toBeEnabled();
+  await expect(page.getByLabel("Ask an operational question")).toBeEnabled();
 });

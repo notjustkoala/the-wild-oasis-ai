@@ -125,6 +125,8 @@ export default function StructuredResults({
   onContinue,
   streaming = false,
   expandExplanation = streaming,
+  inlineExplanation = false,
+  decisionsDisabled = false,
 }: {
   result: OperationsResponse;
   outputs: OperationsToolOutput[];
@@ -134,6 +136,8 @@ export default function StructuredResults({
   onContinue: () => void;
   streaming?: boolean;
   expandExplanation?: boolean;
+  inlineExplanation?: boolean;
+  decisionsDisabled?: boolean;
 }) {
   const proposal = outputs.find((output): output is ApprovalOutput => output.kind === "internal-note-approval");
   const metrics = outputs.filter((output): output is Extract<OperationsToolOutput, { kind: "booking-metrics" }> => output.kind === "booking-metrics");
@@ -160,10 +164,10 @@ export default function StructuredResults({
           <strong id="copilot-approval-title">Internal note · Booking #{proposal.bookingId}</strong>
           <p>{proposal.note}</p>
           <Actions>
-            <Action type="button" onClick={() => onDecision("approve")} disabled={streaming || Boolean(approvalState)}>
+            <Action type="button" onClick={() => onDecision("approve")} disabled={streaming || decisionsDisabled || Boolean(approvalState)}>
               {approvalState === "approving" ? "Approving…" : "Approve note"}
             </Action>
-            <Action type="button" $secondary onClick={() => onDecision("reject")} disabled={streaming || Boolean(approvalState)}>
+            <Action type="button" $secondary onClick={() => onDecision("reject")} disabled={streaming || decisionsDisabled || Boolean(approvalState)}>
               {approvalState === "rejecting" ? "Rejecting…" : "Reject draft"}
             </Action>
           </Actions>
@@ -205,7 +209,7 @@ export default function StructuredResults({
       {cabins.length ? <Group><SectionTitle>Cabin performance</SectionTitle>{cabins.map((output, index) => <ChartResult key={`cabins-${index}`} output={output} />)}</Group> : null}
       {policies.length ? <PolicyGroup><SectionTitle>Policy sources</SectionTitle>{policies.map((output, index) => <PolicyCitations key={`policies-${index}`} output={output} />)}</PolicyGroup> : null}
 
-      <CopilotAnswer text={result.text} hasStructuredResults={hasStructuredResults} streaming={streaming} expanded={expandExplanation} />
+      <CopilotAnswer text={result.text} hasStructuredResults={hasStructuredResults && !inlineExplanation} streaming={streaming} expanded={expandExplanation} />
       <ToolTimeline steps={result.steps} />
 
       <Footer>

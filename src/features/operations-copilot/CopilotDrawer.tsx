@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import styled, { createGlobalStyle } from "styled-components";
 import toast from "react-hot-toast";
 
@@ -37,7 +37,7 @@ const Drawer = styled.aside`
   top: 0;
   right: 0;
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
   width: min(56rem, 100vw);
   height: 100dvh;
   max-height: 100dvh;
@@ -78,13 +78,13 @@ const Close = styled.button`
 const Form = styled.form`
   display: grid;
   gap: 0.8rem;
-  padding: 0 2.4rem 1.6rem;
-  border-bottom: 1px solid var(--color-grey-200);
+  padding: 1.6rem 2.4rem;
+  border-top: 1px solid var(--color-grey-200);
 
-  textarea { min-height: 8rem; resize: vertical; border: 1px solid var(--color-grey-300); border-radius: var(--border-radius-sm); padding: 1rem; background: var(--color-grey-0); }
+  textarea { min-height: 8rem; resize: none; max-height: 16rem; border: 1px solid var(--color-grey-300); border-radius: var(--border-radius-sm); padding: 1rem; background: var(--color-grey-0); }
 
   @media (max-width: 40rem) {
-    padding: 0 1.6rem 1.2rem;
+    padding: 1.2rem 1.6rem;
   }
 `;
 const Button = styled.button<{ $secondary?: boolean }>`
@@ -124,179 +124,143 @@ function getFocusableElements(container: HTMLElement) {
   )).filter((element) => element.getAttribute("aria-hidden") !== "true");
 }
 
+type ConversationTurn = {
+  id: string; question: string; result: OperationsResponse | null; receipt: OperationsReceipt | null;
+  error: string | null; cancelled: boolean; hasStreamed: boolean; approvalState: string | null;
+};
+const Question = styled.div`
+  margin-left: 2.4rem; padding: 1.2rem 1.6rem; border: 1px solid var(--color-brand-500);
+  border-radius: 1.2rem; background: var(--color-grey-100); white-space: pre-wrap; overflow-wrap: anywhere;
+`;
+const Turn = styled.section`
+  display: grid; min-width: 0; gap: 1.2rem; padding-bottom: 2rem; border-bottom: 1px solid var(--color-grey-200);
+`;
+
 export default function CopilotDrawer() {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
-  const [result, setResult] = useState<OperationsResponse | null>(null);
+  const [turns, setTurns] = useState<ConversationTurn[]>([]);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [cancelled, setCancelled] = useState(false);
-  const [hasStreamed, setHasStreamed] = useState(false);
   const [showLatest, setShowLatest] = useState(false);
-  const [receipt, setReceipt] = useState<OperationsReceipt | null>(null);
+  const [decisionId, setDecisionId] = useState<string | null>(null);
   const activeRequest = useRef<AbortController | null>(null);
-  const [approvalState, setApprovalState] = useState<string | null>(null);
-  const decisionPending = approvalState === "approving" || approvalState === "rejecting";
+  const activeTurnId = useRef<string | null>(null);
+  const decisionPending = decisionId !== null;
   const launcherRef = useRef<HTMLButtonElement>(null);
   const drawerRef = useRef<HTMLElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const restoreLauncherFocus = useRef(false);
   const contentRef = useRef<HTMLDivElement>(null);
   const followLatest = useRef(true);
-  const toolOutputs = useMemo(() => outputs(result), [result]);
-  const proposal = toolOutputs.find((output) => output.kind === "internal-note-approval");
 
+  function updateTurn(id: string, changes: Partial<ConversationTurn> | ((turn: ConversationTurn) => ConversationTurn)) {
+    setTurns(previous => previous.map(turn => turn.id !== id ? turn : typeof changes === "function" ? changes(turn) : { ...turn, ...changes }));
+  }
   useEffect(() => () => { activeRequest.current?.abort(); activeRequest.current = null; }, []);
-
   useEffect(() => {
     const content = contentRef.current;
     if (!content) return;
     if (followLatest.current) content.scrollTop = content.scrollHeight;
     else setShowLatest(content.scrollHeight - content.scrollTop - content.clientHeight > 80);
-  }, [result, busy, error, open]);
-
-  function stopResponse() {
-    if (!activeRequest.current) return;
-    activeRequest.current.abort();
-    activeRequest.current = null;
-    setBusy(false);
-    setCancelled(true);
-    setResult((previous) => previous ? { ...previous, steps: previous.steps.map((step) => ({ ...step,
-      status: step.status === "running" ? "interrupted" : step.status,
-      toolCalls: step.toolCalls.map((call) => ({ ...call, status: call.status === "running" ? "interrupted" : call.status })),
-    })) } : previous);
-  }
-
+  }, [turns, busy, open]);
   useEffect(() => {
-    if (open) {
-      restoreLauncherFocus.current = true;
-      textareaRef.current?.focus();
-      return;
-    }
-
-    if (restoreLauncherFocus.current) {
-      restoreLauncherFocus.current = false;
-      launcherRef.current?.focus();
-    }
+    if (open) { restoreLauncherFocus.current = true; textareaRef.current?.focus(); return; }
+    if (restoreLauncherFocus.current) { restoreLauncherFocus.current = false; launcherRef.current?.focus(); }
   }, [open]);
 
-  function closeDrawer() {
-    stopResponse();
-    setOpen(false);
+  function stopResponse() {
+    const controller = activeRequest.current, id = activeTurnId.current;
+    if (!controller || !id) return;
+    controller.abort(); activeRequest.current = null; activeTurnId.current = null; setBusy(false);
+    updateTurn(id, turn => ({ ...turn, cancelled: true, result: turn.result ? { ...turn.result,
+      steps: turn.result.steps.map(step => ({ ...step, status: step.status === "running" ? "interrupted" : step.status,
+        toolCalls: step.toolCalls.map(call => ({ ...call, status: call.status === "running" ? "interrupted" : call.status })) })) } : null }));
   }
-
+  function closeDrawer() { stopResponse(); setOpen(false); }
   function handleDrawerKeyDown(event: React.KeyboardEvent<HTMLElement>) {
-    if (event.key === "Escape") {
-      event.preventDefault();
-      closeDrawer();
-      return;
-    }
+    if (event.key === "Escape") { event.preventDefault(); closeDrawer(); return; }
     if (event.key !== "Tab" || !drawerRef.current) return;
-
     const focusable = getFocusableElements(drawerRef.current);
-    if (!focusable.length) {
-      event.preventDefault();
-      return;
+    if (!focusable.length) { event.preventDefault(); return; }
+    const index = focusable.indexOf(document.activeElement as HTMLElement);
+    if (event.shiftKey && index <= 0 || !event.shiftKey && (index === -1 || index === focusable.length - 1)) {
+      event.preventDefault(); (event.shiftKey ? focusable.at(-1) : focusable[0])?.focus();
     }
-    const activeIndex = focusable.indexOf(document.activeElement as HTMLElement);
-    const shouldWrapBackward = event.shiftKey && activeIndex <= 0;
-    const shouldWrapForward = !event.shiftKey && (activeIndex === -1 || activeIndex === focusable.length - 1);
-    if (!shouldWrapBackward && !shouldWrapForward) return;
-
-    event.preventDefault();
-    (shouldWrapBackward ? focusable.at(-1) : focusable[0])?.focus();
   }
-
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!input.trim() || busy || decisionPending) return;
-    setBusy(true);
-    setCancelled(false);
-    setHasStreamed(false);
-    followLatest.current = true;
-    setShowLatest(false);
-    setError(null);
-    setResult(null);
-    setReceipt(null);
+    const question = input.trim();
+    if (!question || busy || decisionPending) return;
+    const id = typeof crypto.randomUUID === "function" ? crypto.randomUUID() : `turn-${Date.now()}-${Math.random()}`;
+    const history = turns.map(turn => turn.question);
     const controller = new AbortController();
-    activeRequest.current = controller;
-    setApprovalState(null);
+    activeRequest.current = controller; activeTurnId.current = id;
+    setTurns(previous => [...previous, { id, question, result: null, receipt: null, error: null, cancelled: false, hasStreamed: false, approvalState: null }]);
+    setInput(""); setBusy(true); followLatest.current = true; setShowLatest(false);
     try {
-      const answer = await askOperationsCopilot(input, controller.signal, (partial) => {
+      const answer = await askOperationsCopilot(question, controller.signal, partial => {
         if (activeRequest.current !== controller) return;
-        setHasStreamed(true);
-        setResult(partial); setReceipt(partial.receipt ?? null);
-      });
+        updateTurn(id, turn => ({ ...turn, hasStreamed: true, result: partial, receipt: partial.receipt ?? turn.receipt }));
+      }, history);
       if (activeRequest.current !== controller) return;
-      setResult(answer); setReceipt(answer.receipt ?? null);
+      updateTurn(id, turn => ({ ...turn, result: answer, receipt: answer.receipt ?? turn.receipt }));
     } catch (requestError) {
       if (activeRequest.current !== controller || controller.signal.aborted) return;
       const message = requestError instanceof Error ? requestError.message : "The operations copilot is unavailable.";
-      setError(message);
-      if (requestError instanceof OperationsRequestError) setReceipt(requestError.receipt ?? null);
+      updateTurn(id, turn => ({ ...turn, error: message, receipt: requestError instanceof OperationsRequestError ? requestError.receipt ?? turn.receipt : turn.receipt }));
       toast.error(message);
     } finally {
-      if (activeRequest.current === controller) { activeRequest.current = null; setBusy(false); }
+      if (activeRequest.current === controller) { activeRequest.current = null; activeTurnId.current = null; setBusy(false); }
     }
   }
-
-  async function decide(action: "approve" | "reject") {
-    if (!proposal || approvalState || busy) return;
-    setApprovalState(action === "approve" ? "approving" : "rejecting");
+  async function decide(id: string, action: "approve" | "reject") {
+    const turn = turns.find(item => item.id === id);
+    const proposal = outputs(turn?.result ?? null).find(output => output.kind === "internal-note-approval");
+    if (!turn || !proposal || turn.approvalState || busy || decisionPending) return;
+    setDecisionId(id); updateTurn(id, { approvalState: action === "approve" ? "approving" : "rejecting" });
     try {
       const response = await decideOperationsApproval(proposal.approvalId, action);
-      setApprovalState(response.status);
+      updateTurn(id, { approvalState: response.status });
       toast.success(action === "approve" ? "Internal note added." : "Draft rejected; no booking field changed.");
-    } catch (decisionError) {
-      setApprovalState(null);
-      toast.error(decisionError instanceof Error ? decisionError.message : "Approval decision failed.");
-    }
+    } catch (error) {
+      updateTurn(id, { approvalState: null }); toast.error(error instanceof Error ? error.message : "Approval decision failed.");
+    } finally { setDecisionId(null); }
   }
-
   return <>
     <Launcher ref={launcherRef} type="button" onClick={() => setOpen(true)} aria-haspopup="dialog" aria-expanded={open}>✦ Operations Copilot</Launcher>
-    {open ? <><DrawerOpenScrollLock /><Overlay>
-      <Drawer ref={drawerRef} role="dialog" aria-modal="true" aria-labelledby="operations-copilot-title" aria-describedby="operations-copilot-description" aria-busy={busy || decisionPending} onKeyDown={handleDrawerKeyDown}>
-        <Header>
-          <div><h2 id="operations-copilot-title">Operations Copilot</h2><p id="operations-copilot-description">Read-only operational answers with approval-gated notes.</p></div>
-          <Close type="button" onClick={closeDrawer} aria-label="Close operations copilot">×</Close>
-        </Header>
-        <Form onSubmit={submit}>
-          <label htmlFor="operations-copilot-question">Ask an operational question</label>
-          <textarea ref={textareaRef} id="operations-copilot-question" value={input} onChange={(event) => setInput(event.target.value)} maxLength={2_000} placeholder="Draft an internal note for booking 123: Follow up on payment" disabled={busy || decisionPending} />
-          <Button type="submit" disabled={busy || decisionPending || !input.trim()}>{decisionPending ? "Recording decision…" : busy ? "Thinking…" : "Ask Copilot"}</Button>
-          {busy ? <Button type="button" $secondary onClick={stopResponse}>Stop response</Button> : null}
-          {showLatest ? <Button type="button" $secondary onClick={() => {
-            followLatest.current = true; setShowLatest(false);
-            if (contentRef.current) contentRef.current.scrollTop = contentRef.current.scrollHeight;
-          }}>Jump to latest</Button> : null}
-        </Form>
-        <Content ref={contentRef} aria-label="Operations response" aria-live="polite" aria-busy={busy} onScroll={() => {
-          const content = contentRef.current;
-          if (!content) return;
-          followLatest.current = content.scrollHeight - content.scrollTop - content.clientHeight <= 80;
-          if (followLatest.current) setShowLatest(false);
-        }}>
-          {busy ? <p role="status">{result?.text ? "Writing response…" : "Loading operational data…"}</p> : null}
-          {cancelled ? <p role="status">Response stopped. Received results are kept and may be incomplete.</p> : null}
-          {error ? <p role="alert">{error}</p> : null}
-          {!busy && !result && !error ? <p role="status">Ask an operational question to begin.</p> : null}
-          {result ? <StructuredResults
-            result={result}
-            outputs={toolOutputs}
-            receipt={receipt}
-            approvalState={approvalState}
-            onDecision={(action) => void decide(action)}
-            onContinue={closeDrawer}
-            streaming={busy}
-            expandExplanation={hasStreamed}
-          /> : null}
-          {!result ? <FallbackFooter>
-            <Link to="/bookings" onClick={closeDrawer}>Continue with Bookings</Link>
-            {receipt && !busy ? <ResponseFeedback key={receipt.traceId} receipt={receipt} /> : null}
-          </FallbackFooter> : null}
-        </Content>
-      </Drawer>
-    </Overlay></> : null}
+    {open ? <><DrawerOpenScrollLock /><Overlay><Drawer ref={drawerRef} role="dialog" aria-modal="true" aria-labelledby="operations-copilot-title" aria-describedby="operations-copilot-description" aria-busy={busy || decisionPending} onKeyDown={handleDrawerKeyDown}>
+      <Header><div><h2 id="operations-copilot-title">Operations Copilot</h2><p id="operations-copilot-description">Read-only operational answers with approval-gated notes.</p></div><Close type="button" onClick={closeDrawer} aria-label="Close operations copilot">×</Close></Header>
+      <Content ref={contentRef} aria-label="Operations response" aria-live="polite" aria-busy={busy} onScroll={() => {
+        const content = contentRef.current; if (!content) return;
+        followLatest.current = content.scrollHeight - content.scrollTop - content.clientHeight <= 80;
+        if (followLatest.current) setShowLatest(false);
+      }}>
+        {!turns.length ? <><p role="status">Ask an operational question to begin.</p><FallbackFooter><Link to="/bookings" onClick={closeDrawer}>Continue with Bookings</Link></FallbackFooter></> : null}
+        {turns.map(turn => {
+          const streaming = busy && activeTurnId.current === turn.id;
+          return <Turn key={turn.id} aria-label="Conversation turn">
+            <Question><strong>You</strong><p>{turn.question}</p></Question>
+            <strong>Copilot</strong>
+            {streaming ? <p role="status">{turn.result?.text ? "Writing response…" : "Loading operational data…"}</p> : null}
+            {turn.cancelled ? <p role="status">Response stopped. Received results are kept and may be incomplete.</p> : null}
+            {turn.error ? <p role="alert">{turn.error}</p> : null}
+            {turn.result ? <StructuredResults result={turn.result} outputs={outputs(turn.result)} receipt={turn.receipt}
+              approvalState={turn.approvalState} onDecision={action => void decide(turn.id, action)} onContinue={closeDrawer}
+              streaming={streaming} expandExplanation={turn.hasStreamed} inlineExplanation decisionsDisabled={busy || decisionPending} />
+              : !streaming ? <FallbackFooter><Link to="/bookings" onClick={closeDrawer}>Continue with Bookings</Link>{turn.receipt ? <ResponseFeedback receipt={turn.receipt} /> : null}</FallbackFooter> : null}
+          </Turn>;
+        })}
+      </Content>
+      <Form onSubmit={submit}>
+        {showLatest ? <Button type="button" $secondary onClick={() => { followLatest.current = true; setShowLatest(false); if (contentRef.current) contentRef.current.scrollTop = contentRef.current.scrollHeight; }}>Jump to latest</Button> : null}
+        <label htmlFor="operations-copilot-question">Ask an operational question</label>
+        <textarea ref={textareaRef} id="operations-copilot-question" value={input} onChange={event => setInput(event.target.value)}
+          onKeyDown={event => { if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing && event.keyCode !== 229) { event.preventDefault(); event.currentTarget.form?.requestSubmit(); } }}
+          maxLength={2000} placeholder="Ask about bookings, hotel policies, or draft an internal note…" disabled={busy || decisionPending} />
+        <Button type="submit" disabled={busy || decisionPending || !input.trim()}>{decisionPending ? "Recording decision…" : busy ? "Thinking…" : "Ask Copilot"}</Button>
+        {busy ? <Button type="button" $secondary onClick={stopResponse}>Stop response</Button> : null}
+        <small>Enter to send · Shift+Enter for a new line</small>
+      </Form>
+    </Drawer></Overlay></> : null}
   </>;
 }

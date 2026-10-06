@@ -17,6 +17,21 @@ function fixture() {
 describe("Operations UI message stream", () => {
   afterEach(() => { vi.unstubAllGlobals(); });
 
+  it("sends only the six latest user questions as context, followed by the current request", async () => {
+    const stream = fixture();
+    const fetchMock = vi.fn().mockResolvedValue(stream.response);
+    vi.stubGlobal("fetch", fetchMock);
+    const answer = askOperationsCopilot("Current request", undefined, undefined,
+      Array.from({ length: 9 }, (_, index) => `Question ${index}`));
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    const messages = JSON.parse(fetchMock.mock.calls[0][1].body).messages;
+    expect(messages.map((message: { parts: { text: string }[] }) => message.parts[0].text))
+      .toEqual(["Question 3", "Question 4", "Question 5", "Question 6", "Question 7", "Question 8", "Current request"]);
+    expect(messages.every((message: { role: string }) => message.role === "user")).toBe(true);
+    stream.write(sse({ type: "start-step" }, { type: "text-start", id: "text" }, { type: "text-delta", id: "text", delta: "Complete" }, { type: "text-end", id: "text" }, { type: "finish-step" }, { type: "finish", finishReason: "stop" }) + "data: [DONE]\n\n");
+    await answer;
+  });
+
   it("requests SSE and delivers live tool progress, validated cards, and fragmented UTF-8 text before completion", async () => {
     const stream = fixture();
     const fetchMock = vi.fn().mockResolvedValue(stream.response);

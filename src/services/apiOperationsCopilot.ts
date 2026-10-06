@@ -308,13 +308,13 @@ function idempotencyKey() {
   return `copilot-${Date.now()}-${Math.random().toString(36).slice(2)}-key`;
 }
 
-export async function askOperationsCopilot(text: string, signal?: AbortSignal, onUpdate?: (result: OperationsResponse) => void): Promise<OperationsResponse> {
+export async function askOperationsCopilot(text: string, signal?: AbortSignal, onUpdate?: (result: OperationsResponse) => void, previousQuestions: string[] = []): Promise<OperationsResponse> {
   const accessToken = await token();
   const response = await fetch(endpoint("/api/ai/admin"), {
     method: "POST",
     signal,
     headers: { Authorization: `Bearer ${accessToken}`, Accept: "text/event-stream", "Content-Type": "application/json" },
-    body: JSON.stringify({ id: "wild-oasis-admin-copilot", trigger: "submit-message", messages: [{ id: `operations-user-${Date.now()}`, role: "user", parts: [{ type: "text", text: text.trim() }] }] }),
+    body: JSON.stringify({ id: "wild-oasis-admin-copilot", trigger: "submit-message", messages: [...previousQuestions.slice(-6).map((question, index) => ({ id: `operations-history-${index}`, role: "user", parts: [{ type: "text", text: question.slice(0, 2000) }] })), { id: `operations-user-${Date.now()}`, role: "user", parts: [{ type: "text", text: text.trim() }] }] }),
   });
   const traceId = response.headers?.get("X-AI-Trace-Id");
   const receipt = traceId && /^[0-9a-f-]{36}$/i.test(traceId) ? { traceId, token: response.headers.get("X-AI-Feedback-Token") } : undefined;

@@ -33,7 +33,7 @@ for (const status of [504, 403]) test(`@security HTTP ${status}, trace, retry an
   await page.getByText("Response details").click();
   await expect(page.getByText(traceId, { exact: true })).toBeVisible(); await expect(page.getByRole("button", { name: "Helpful", exact: true })).toHaveCount(0);
   await page.screenshot({ path: `output/playwright/feature05-${status === 504 ? "timeout" : "denied"}.png`, fullPage: true });
-  await page.getByRole("button", { name: "Ask Copilot" }).click(); await expect(page.getByText("Retry completed.")).toBeVisible(); await page.getByRole("link", { name: "Continue with Bookings" }).click(); await expect(page.getByRole("heading", { name: "All bookings" })).toBeVisible();
+  await page.getByLabel("Ask an operational question").fill("Show arrivals"); await page.getByRole("button", { name: "Ask Copilot" }).click(); await expect(page.getByText("Retry completed.")).toBeVisible(); await expect(page.getByLabel("Conversation turn")).toHaveCount(2); await page.getByRole("link", { name: "Continue with Bookings" }).last().click(); await expect(page.getByRole("heading", { name: "All bookings" })).toBeVisible();
 });
 test("stops a pending request and re-enables input", async ({ page }) => {
   let release!: () => void; const pending = new Promise<void>(resolve => { release = resolve; });
@@ -69,15 +69,15 @@ for (const viewport of [{ name: "desktop", width: 1280, height: 900 }, { name: "
     const dialog = page.getByRole("dialog", { name: "Operations Copilot" });
     const approval = page.getByText("Internal note · Booking #699");
     const metrics = page.getByRole("heading", { name: "Summary metrics" });
-    const explanation = page.getByText("AI explanation");
+
     const activity = page.getByText("Data activity · 2 tools");
     await expect(approval).toBeVisible();
     await expect(metrics).toBeVisible();
     await expect(page.getByText("Follow up on payment before check-in.")).toBeVisible();
-    await expect(page.getByText("Monthly summary")).not.toBeVisible();
+    await expect(page.getByText("Monthly summary")).toBeVisible();
 
     const ordered = await page.evaluate(() => {
-      const labels = ["Internal note · Booking #699", "Summary metrics", "AI explanation", "Data activity · 2 tools", "Continue with Bookings"];
+      const labels = ["Internal note · Booking #699", "Summary metrics", "Monthly summary", "Data activity · 2 tools", "Continue with Bookings"];
       const nodes = labels.map(label => Array.from(document.querySelectorAll("body *")).find(node => node.textContent?.trim() === label));
       if (nodes.some((node) => !node)) return false;
       return nodes.slice(1).every((node, index) => Boolean(nodes[index]!.compareDocumentPosition(node!) & Node.DOCUMENT_POSITION_FOLLOWING));
@@ -103,3 +103,28 @@ for (const viewport of [{ name: "desktop", width: 1280, height: 900 }, { name: "
     await expect(page.getByRole("button", { name: /Operations Copilot/ })).toBeFocused();
   });
 }
+
+test('keeps multi-turn history with the composer below the scrollable conversation', async ({ page }) => {
+  let calls = 0;
+  await page.setViewportSize({width:390,height:844});
+  await page.route('**/api/ai/admin', route => {
+    calls++;
+    const messages = route.request().postDataJSON().messages;
+    if(calls === 2) expect(messages.map((message: {parts:{text:string}[]}) => message.parts[0].text)).toEqual(['Show arrivals','Explain the policy']);
+    return route.fulfill({headers,json:{text:calls===1?'First historical answer.':'Second current answer.',steps:[]}});
+  });
+  await ask(page);
+  await expect(page.getByText('First historical answer.')).toBeVisible();
+  const input = page.getByLabel('Ask an operational question');
+  await input.fill('Explain the policy'); await input.press('Enter');
+  await expect(page.getByText('Second current answer.')).toBeVisible();
+  await expect(page.getByLabel('Conversation turn')).toHaveCount(2);
+  await expect(page.getByText('First historical answer.')).toBeVisible();
+  const content = await page.getByLabel('Operations response').boundingBox();
+  const composer = await input.boundingBox();
+  expect(composer!.y).toBeGreaterThanOrEqual(content!.y+content!.height);
+  await page.screenshot({path:'output/playwright/qa-staff-history-mobile.png',fullPage:true});
+  await page.getByRole('button',{name:'Close operations copilot'}).click();
+  await page.getByRole('button',{name:/Operations Copilot/}).click();
+  await expect(page.getByLabel('Conversation turn')).toHaveCount(2);
+});

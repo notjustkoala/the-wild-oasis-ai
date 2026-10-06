@@ -1,7 +1,7 @@
-import { lazy, Suspense } from "react";
 import styled from "styled-components";
+import { cleanAiAnswer } from "./aiAnswerText";
 
-const ReactMarkdown = lazy(() => import("react-markdown"));
+import ReactMarkdown from "react-markdown";
 
 const ALLOWED_MARKDOWN_ELEMENTS = [
   "p",
@@ -68,7 +68,6 @@ const Explanation = styled.details`
 function Markdown({ text }: { text: string }) {
   return (
     <Answer>
-      <Suspense fallback={<p style={{ whiteSpace: "pre-wrap" }}>{text}</p>}>
         <ReactMarkdown
           allowedElements={[...ALLOWED_MARKDOWN_ELEMENTS]}
           components={{
@@ -78,9 +77,8 @@ function Markdown({ text }: { text: string }) {
           skipHtml
           unwrapDisallowed
         >
-          {text}
+          {cleanAiAnswer(text)}
         </ReactMarkdown>
-      </Suspense>
     </Answer>
   );
 }
