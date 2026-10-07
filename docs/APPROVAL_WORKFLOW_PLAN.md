@@ -45,6 +45,8 @@
 
 ## 快速人工验收
 
+逐项操作、提问原文、状态对照、冲突保护和结束恢复见[完整人工验收清单](./APPROVAL_WORKFLOW_ACCEPTANCE.md)。
+
 1. 员工登录：侧栏应有“My requests”，无管理员“Approvals”；直接访问`/approvals`显示无权限。
 2. 在Copilot输入“为预订 518 起草内部备注：请在入住前人工确认准备情况。”：得到未提交草稿卡，先核对文字；没有员工自行批准按钮。
 3. 点“Submit for approval”：状态为待管理员审核。刷新“My requests”仍能找到申请；此时订单原备注不变。
