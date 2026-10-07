@@ -38,6 +38,26 @@ async function userAction(action: () => Promise<unknown>) {
 }
 
 describe("Operations Copilot drawer", () => {
+  it("keeps generating while hidden and shows the completed answer on reopen", async () => {
+    let finish!: (answer: OperationsResponse) => void;
+    let update!: (answer: OperationsResponse) => void;
+    ask.mockImplementation((_text, _signal, onUpdate) => { update = onUpdate; return new Promise(resolve => { finish = resolve; }); });
+    const user = userEvent.setup();
+    render(<MemoryRouter><CopilotDrawer /></MemoryRouter>);
+    await userAction(() => user.click(screen.getByRole("button", { name: /Operations Copilot/ })));
+    await userAction(() => user.type(screen.getByRole("textbox"), "Show arrivals"));
+    await userAction(() => user.click(screen.getByRole("button", { name: "Ask Copilot" })));
+    const signal = ask.mock.calls[0][1];
+    await act(async () => update({ text: "Partial answer", steps: [] }));
+    await userAction(() => user.click(screen.getByRole("button", { name: "Close operations copilot" })));
+    expect(signal.aborted).toBe(false);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    await act(async () => finish({ text: "Complete answer while hidden", steps: [] }));
+    await userAction(() => user.click(screen.getByRole("button", { name: /Operations Copilot/ })));
+    expect(screen.getByText("Complete answer while hidden")).toBeVisible();
+    expect(screen.queryByText(/Response stopped/)).not.toBeInTheDocument();
+    expect(screen.getByRole("textbox")).toBeEnabled();
+  });
   it("renders live cards and text, keeps them on stop, and ignores late updates from the cancelled request", async () => {
     let update!: (result: OperationsResponse) => void;
     let resolve!: (result: OperationsResponse) => void;

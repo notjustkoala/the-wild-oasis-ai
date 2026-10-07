@@ -164,7 +164,12 @@ export default function CopilotDrawer() {
     else setShowLatest(content.scrollHeight - content.scrollTop - content.clientHeight > 80);
   }, [turns, busy, open]);
   useEffect(() => {
-    if (open) { restoreLauncherFocus.current = true; textareaRef.current?.focus(); return; }
+    if (open) {
+      restoreLauncherFocus.current = true;
+      if (textareaRef.current?.disabled) drawerRef.current?.querySelector<HTMLButtonElement>("button")?.focus();
+      else textareaRef.current?.focus();
+      return;
+    }
     if (restoreLauncherFocus.current) { restoreLauncherFocus.current = false; launcherRef.current?.focus(); }
   }, [open]);
 
@@ -176,7 +181,7 @@ export default function CopilotDrawer() {
       steps: turn.result.steps.map(step => ({ ...step, status: step.status === "running" ? "interrupted" : step.status,
         toolCalls: step.toolCalls.map(call => ({ ...call, status: call.status === "running" ? "interrupted" : call.status })) })) } : null }));
   }
-  function closeDrawer() { stopResponse(); setOpen(false); }
+  function closeDrawer() { setOpen(false); }
   function handleDrawerKeyDown(event: React.KeyboardEvent<HTMLElement>) {
     if (event.key === "Escape") { event.preventDefault(); closeDrawer(); return; }
     if (event.key !== "Tab" || !drawerRef.current) return;

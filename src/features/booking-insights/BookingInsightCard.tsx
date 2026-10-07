@@ -6,6 +6,8 @@ import type {
   BookingRiskTag,
 } from "../../services/apiAi";
 import { useBookingInsight } from "./useBookingInsight";
+import { useUser } from "../authentication/useUser";
+import { BookingInsightRequestError } from "../../services/apiAi";
 
 const Card = styled.section`
   padding: 2.4rem 3.2rem;
@@ -238,6 +240,8 @@ export default function BookingInsightCard({
   bookingId: number;
   observation?: string | null;
 }) {
+  const { user, isLoading: userLoading } = useUser();
+  const canViewBriefing = user?.app_metadata?.role === "admin";
   const {
     data,
     isLoading,
@@ -248,7 +252,10 @@ export default function BookingInsightCard({
     review,
     isReviewing,
     reviewError,
-  } = useBookingInsight(bookingId);
+  } = useBookingInsight(bookingId, canViewBriefing);
+
+  if (userLoading) return null;
+  if (!canViewBriefing) return <Card aria-labelledby="booking-insight-title"><Title id="booking-insight-title">AI risk Briefing</Title><p>Administrator access is required to generate or view risk Briefings. Use Operations Copilot for staff booking and policy queries.</p></Card>;
 
   const state = observation?.trim() ? data?.state ?? "missing" : "empty";
   const insight = data?.insight?.result;
@@ -277,7 +284,7 @@ export default function BookingInsightCard({
           ready; the server will safely reclaim the stale request.
         </p>
       )}
-      {Boolean(visibleError) && <p role="alert">AI Briefing could not be loaded. Please retry.</p>}
+      {Boolean(visibleError) && <p role="alert">{visibleError instanceof BookingInsightRequestError && visibleError.status === 403 ? "Administrator access is required. Sign in with an administrator account." : visibleError instanceof BookingInsightRequestError && visibleError.status === 401 ? "Your session expired. Sign in again to load the Briefing." : "AI Briefing could not be loaded. Please retry."}</p>}
       {state === "empty" && <p>No note to analyze; the booking flow is unchanged.</p>}
       {state === "manual-review" && (
         <p role="status">

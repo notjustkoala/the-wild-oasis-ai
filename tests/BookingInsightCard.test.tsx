@@ -2,6 +2,8 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 const hook = vi.hoisted(() => vi.fn());
+const auth = vi.hoisted(() => ({ isAdmin: true }));
+vi.mock("../src/features/authentication/useUser", () => ({ useUser: () => ({ user: { app_metadata: { role: auth.isAdmin ? "admin" : "staff" } }, isLoading: false }) }));
 
 vi.mock("../src/features/booking-insights/useBookingInsight", () => ({
   useBookingInsight: hook,
@@ -45,6 +47,16 @@ const insight = {
 };
 
 describe("BookingInsightCard", () => {
+  beforeEach(() => { auth.isAdmin = true; });
+  it("disables Briefing queries and hides cached results/actions for staff", () => {
+    auth.isAdmin = false;
+    hook.mockReturnValue(state({ data: { state: "cached", insight } }));
+    render(<BookingInsightCard bookingId={518} observation="Synthetic observation" />);
+    expect(hook).toHaveBeenCalledWith(518, false);
+    expect(screen.getByText(/Administrator access is required/)).toBeVisible();
+    expect(screen.queryByRole("button", { name: /Generate Briefing|Reanalyze/ })).not.toBeInTheDocument();
+    expect(screen.queryByText(insight.result.summary)).not.toBeInTheDocument();
+  });
   it("keeps the raw observation visible while loading", () => {
     hook.mockReturnValue(state({ isLoading: true, data: undefined }));
     render(

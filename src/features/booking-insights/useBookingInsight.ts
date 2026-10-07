@@ -20,14 +20,14 @@ export function isStalePendingInsight(
   return Number.isFinite(updatedAt) && now - updatedAt > BOOKING_INSIGHT_PENDING_STALE_MS;
 }
 
-export function useBookingInsight(bookingId: number) {
+export function useBookingInsight(bookingId: number, enabled = true) {
   const queryClient = useQueryClient();
   const [now, setNow] = useState(() => Date.now());
   const queryKey = ["booking-insight", bookingId] as const;
   const query = useQuery({
     queryKey,
     queryFn: () => getBookingInsight(bookingId),
-    enabled: Number.isSafeInteger(bookingId) && bookingId > 0,
+    enabled: enabled && Number.isSafeInteger(bookingId) && bookingId > 0,
     retry: false,
     refetchInterval: (data) =>
       data?.state === "pending" && !isStalePendingInsight(data)
@@ -36,7 +36,7 @@ export function useBookingInsight(bookingId: number) {
   });
 
   useEffect(() => {
-    if (query.data?.state !== "pending" || !query.data.insight?.updatedAt) {
+    if (!enabled || query.data?.state !== "pending" || !query.data.insight?.updatedAt) {
       return undefined;
     }
     const updatedAt = Date.parse(query.data.insight.updatedAt);
@@ -47,7 +47,7 @@ export function useBookingInsight(bookingId: number) {
     );
     const timer = window.setTimeout(() => setNow(Date.now()), delay);
     return () => window.clearTimeout(timer);
-  }, [query.data?.state, query.data?.insight?.updatedAt]);
+  }, [enabled, query.data?.state, query.data?.insight?.updatedAt]);
 
   const analysis = useMutation({
     mutationFn: (force: boolean) => analyzeBookingInsight(bookingId, force),

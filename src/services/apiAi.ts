@@ -48,6 +48,10 @@ export type BookingInsightPayload = {
   };
 };
 
+export class BookingInsightRequestError extends Error {
+  constructor(message: string, readonly status: number) { super(message); this.name = "BookingInsightRequestError"; }
+}
+
 function bookingInsightEndpoint(bookingId: number) {
   const configured = import.meta.env.VITE_AI_BFF_URL?.trim();
   const base = configured || (import.meta.env.DEV ? "http://127.0.0.1:3000" : "");
@@ -85,10 +89,11 @@ async function bookingInsightRequest(
   // HTTP 503 so employees can retry without losing the operational context.
   if (payload && "state" in payload) return payload;
   if (!response.ok) {
-    throw new Error(
+    throw new BookingInsightRequestError(
       payload && "error" in payload && payload.error
         ? payload.error
-        : "AI Briefing is temporarily unavailable."
+        : "AI Briefing is temporarily unavailable.",
+      response.status
     );
   }
   throw new Error("AI Briefing returned an invalid response.");
