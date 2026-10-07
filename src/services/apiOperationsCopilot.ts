@@ -82,7 +82,7 @@ export type OperationsToolOutput =
       approvalId: string;
       bookingId: number;
       note: string;
-      status: "pending";
+      status: "draft" | "pending";
       truncated: false;
     })
   | OperationsPolicySearchOutput;
@@ -101,7 +101,7 @@ export class OperationsRequestError extends Error { constructor(message: string,
 export type OperationsApprovalDecision = {
   id: string;
   bookingId: number;
-  status: "executed" | "rejected";
+  status: "draft" | "pending" | "executed" | "rejected" | "cancelled" | "conflict";
   repeated: boolean;
 };
 
@@ -237,7 +237,7 @@ export function isOperationsToolOutput(value: unknown): value is OperationsToolO
     return typeof value.approvalId === "string"
       && isPositiveSafeInteger(value.bookingId)
       && typeof value.note === "string"
-      && value.status === "pending"
+      && (value.status === "draft" || value.status === "pending")
       && value.truncated === false;
   }
   return false;
@@ -266,7 +266,7 @@ function isOperationsStep(value: unknown): value is OperationsStep {
 function parseOperationsApprovalDecision(
   value: unknown,
   approvalId: string,
-  action: "approve" | "reject",
+  action: ApprovalAction,
 ): OperationsApprovalDecision | null {
   if (!isRecord(value)
     || value.id !== approvalId
@@ -275,12 +275,12 @@ function parseOperationsApprovalDecision(
     || value.bookingId <= 0
     || typeof value.repeated !== "boolean") return null;
 
-  const expectedStatus = action === "approve" ? "executed" : "rejected";
-  if (value.status !== expectedStatus) return null;
+  const expected: Record<ApprovalAction, string[]> = { approve: ["executed", "conflict"], reject: ["rejected"], submit: ["pending"], cancel: ["cancelled"], acknowledge: ["executed", "rejected", "conflict"] };
+  if (!expected[action].includes(String(value.status))) return null;
   return {
     id: value.id,
     bookingId: value.bookingId,
-    status: expectedStatus,
+    status: value.status as OperationsApprovalDecision["status"],
     repeated: value.repeated,
   };
 }
@@ -345,14 +345,16 @@ export async function sendOperationsFeedback(receipt: OperationsReceipt, rating:
 
 export async function decideOperationsApproval(
   approvalId: string,
-  action: "approve" | "reject",
+  action: ApprovalAction,
+  reason = "",
 ): Promise<OperationsApprovalDecision> {
+  if (action === "reject" && !reason.trim()) throw new Error("A rejection reason is required.");
   const accessToken = await token();
   const key = idempotencyKey();
   const response = await fetch(endpoint("/api/ai/admin/approval"), {
     method: "POST",
     headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json", "Content-Type": "application/json", "X-Idempotency-Key": key },
-    body: JSON.stringify({ approvalId, action, idempotencyKey: key }),
+    body: JSON.stringify({ approvalId, action, idempotencyKey: key, reason: reason.trim() }),
   });
   const payload: unknown = await response.json().catch(() => null);
   if (!response.ok) {
@@ -365,5 +367,41 @@ export async function decideOperationsApproval(
     ? parseOperationsApprovalDecision(payload.approval, approvalId, action)
     : null;
   if (!approval) throw new Error("The approval service returned an invalid response.");
+  if (typeof window !== "undefined") window.dispatchEvent(new Event("approval-requests-updated"));
   return approval;
+}
+
+export type ApprovalAction = "submit" | "cancel" | "approve" | "reject" | "acknowledge";
+export type ApprovalStatus = OperationsApprovalDecision["status"] | "approved";
+export type ApprovalRequest = {
+  id: string; bookingId: number; note: string; baseNote: string; currentNote: string; status: ApprovalStatus;
+  requesterName: string; reviewerName: string | null; isOwn: boolean; createdAt: string;
+  submittedAt: string | null; decidedAt: string | null; executedAt: string | null; seenAt: string | null;
+  reason: string; cabinName: string; startDate: string; endDate: string; numGuests: number;
+  events: Array<{ event: string; at: string }>;
+};
+export type ApprovalRequests = { items: ApprovalRequest[]; total: number; pendingCount: number; unreadCount: number; page: number; pageSize: number };
+
+function isApprovalRequest(value: unknown): value is ApprovalRequest {
+  if (!isRecord(value)) return false;
+  const strings = ["id", "note", "baseNote", "currentNote", "requesterName", "createdAt", "reason", "cabinName", "startDate", "endDate"];
+  const dates = ["reviewerName", "submittedAt", "decidedAt", "executedAt", "seenAt"];
+  return strings.every(key => typeof value[key] === "string")
+    && dates.every(key => value[key] === null || typeof value[key] === "string")
+    && /^[0-9a-f-]{36}$/i.test(String(value.id)) && isPositiveSafeInteger(value.bookingId)
+    && isPositiveSafeInteger(value.numGuests) && typeof value.isOwn === "boolean"
+    && ["draft", "pending", "approved", "executed", "rejected", "cancelled", "conflict"].includes(String(value.status))
+    && Array.isArray(value.events) && value.events.every(event => isRecord(event) && typeof event.event === "string" && typeof event.at === "string");
+}
+
+export async function getApprovalRequests({ scope = "mine", status = "all", page = 1, pageSize = 20 }: { scope?: "mine" | "inbox"; status?: string; page?: number; pageSize?: number } = {}, signal?: AbortSignal): Promise<ApprovalRequests> {
+  const accessToken = await token();
+  const query = new URLSearchParams({ scope, status, page: String(page), pageSize: String(pageSize) });
+  const response = await fetch(endpoint(`/api/ai/admin/approval?${query}`), { headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json" }, signal });
+  const payload: unknown = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(response.status === 401 ? "Your session expired. Sign in again." : response.status === 403 ? "You do not have access to these approval requests." : "Approval requests could not be loaded. Please retry.");
+  if (!isRecord(payload) || !Array.isArray(payload.items) || !payload.items.every(isApprovalRequest)
+    || !["total", "pendingCount", "unreadCount"].every(key => typeof payload[key] === "number" && Number.isSafeInteger(payload[key]) && Number(payload[key]) >= 0)
+    || payload.page !== page || payload.pageSize !== pageSize) throw new Error("The approval service returned an invalid response.");
+  return payload as ApprovalRequests;
 }

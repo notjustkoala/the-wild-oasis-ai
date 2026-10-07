@@ -13,6 +13,13 @@ const StyledSidebar = styled.aside`
   display: flex;
   flex-direction: column;
   gap: 3.2rem;
+  min-width: 0;
+  @media (max-width: 70rem) {
+    grid-row: 2;
+    padding: 0.8rem 1.2rem;
+    gap: 0;
+    & > :first-child { display: none; }
+  }
 `;
 
 function Sidebar() {

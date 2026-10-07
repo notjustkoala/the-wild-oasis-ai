@@ -132,7 +132,7 @@ export default function StructuredResults({
   outputs: OperationsToolOutput[];
   receipt: OperationsReceipt | null;
   approvalState: string | null;
-  onDecision: (action: "approve" | "reject") => void;
+  onDecision: (action: "submit" | "cancel") => void;
   onContinue: () => void;
   streaming?: boolean;
   expandExplanation?: boolean;
@@ -153,25 +153,26 @@ export default function StructuredResults({
   const attentionAllEmpty = attention.length > 0 && nonemptyAttention.length === 0;
   const combineBookingEmptyStates = arrivalsAllEmpty && attentionAllEmpty;
   const hasStructuredResults = outputs.length > 0;
-  const decision = approvalState === "executed" || approvalState === "rejected" ? approvalState : null;
-  const terminal = Boolean(decision);
+  const decision = approvalState ?? proposal?.status ?? "draft";
+  const terminal = ["executed", "rejected", "cancelled", "conflict"].includes(decision);
 
   return (
     <Results aria-label="Operations Copilot results">
       {proposal ? (
         <Approval $terminal={terminal} aria-labelledby="copilot-approval-title">
-          <Status $terminal={terminal}>{decision ?? "Pending approval"}</Status>
+          <Status $terminal={terminal}>{decision === "draft" ? "Draft — not submitted" : decision === "pending" ? "Awaiting administrator review" : decision}</Status>
           <strong id="copilot-approval-title">Internal note · Booking #{proposal.bookingId}</strong>
           <p>{proposal.note}</p>
           <Actions>
-            <Action type="button" onClick={() => onDecision("approve")} disabled={streaming || decisionsDisabled || Boolean(approvalState)}>
-              {approvalState === "approving" ? "Approving…" : "Approve note"}
-            </Action>
-            <Action type="button" $secondary onClick={() => onDecision("reject")} disabled={streaming || decisionsDisabled || Boolean(approvalState)}>
-              {approvalState === "rejecting" ? "Rejecting…" : "Reject draft"}
-            </Action>
+            {!terminal && decision !== "pending" ? <Action type="button" onClick={() => onDecision("submit")} disabled={streaming || decisionsDisabled || ["submitting", "cancelling"].includes(decision)}>
+              {approvalState === "submitting" ? "Submitting…" : "Submit for approval"}
+            </Action> : null}
+            {!terminal ? <Action type="button" $secondary onClick={() => onDecision("cancel")} disabled={streaming || decisionsDisabled || ["submitting", "cancelling"].includes(decision)}>
+              {approvalState === "cancelling" ? "Withdrawing…" : "Withdraw request"}
+            </Action> : null}
+            <Link to="/my-requests" onClick={onContinue}>View my requests</Link>
           </Actions>
-          {approvalState ? <p role="status">Decision: {approvalState}.</p> : <p>Review the exact note before approving it.</p>}
+          {terminal ? <p role="status">Decision: {decision}.</p> : <p>Review the exact note before submitting. Only an administrator can approve and save it.</p>}
         </Approval>
       ) : null}
 

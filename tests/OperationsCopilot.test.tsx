@@ -12,6 +12,7 @@ import ToolTimeline from "../src/features/operations-copilot/ToolTimeline";
 const ask = vi.hoisted(() => vi.fn());
 const decide = vi.hoisted(() => vi.fn());
 const feedback = vi.hoisted(() => vi.fn());
+const listRequests = vi.hoisted(() => vi.fn().mockResolvedValue({items:[]}));
 const toastSuccess = vi.hoisted(() => vi.fn());
 const toastError = vi.hoisted(() => vi.fn());
 vi.mock("../src/services/apiOperationsCopilot", async (importOriginal) => ({
@@ -19,6 +20,7 @@ vi.mock("../src/services/apiOperationsCopilot", async (importOriginal) => ({
   askOperationsCopilot: ask,
   decideOperationsApproval: decide,
   sendOperationsFeedback: feedback,
+  getApprovalRequests: listRequests,
 }));
 vi.mock("react-hot-toast", () => ({
   default: { success: toastSuccess, error: toastError },
@@ -210,20 +212,20 @@ describe("Operations Copilot drawer", () => {
   });
 
   it("shows approval actions for a draft and sends the chosen decision", async () => {
-    ask.mockResolvedValue({ text: "Draft ready.", steps: [{ stepNumber: 0, status: "completed", text: "", toolCalls: [{ toolName: "addBookingInternalNote", input: { bookingId: 1, note: "Follow up on payment." } }], toolResults: [{ toolName: "addBookingInternalNote", output: { kind: "internal-note-approval", approvalId: "00000000-0000-0000-0000-000000000001", bookingId: 1, note: "Follow up on payment.", status: "pending", facts: [], sourceIds: ["booking:1"], truncated: false } }] }] });
-    decide.mockResolvedValue({ status: "rejected" });
+    ask.mockResolvedValue({ text: "Draft ready.", steps: [{ stepNumber: 0, status: "completed", text: "", toolCalls: [{ toolName: "addBookingInternalNote", input: { bookingId: 1, note: "Follow up on payment." } }], toolResults: [{ toolName: "addBookingInternalNote", output: { kind: "internal-note-approval", approvalId: "00000000-0000-0000-0000-000000000001", bookingId: 1, note: "Follow up on payment.", status: "draft", facts: [], sourceIds: ["booking:1"], truncated: false } }] }] });
+    decide.mockResolvedValue({ status: "cancelled" });
     const user = userEvent.setup();
     render(<MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}><CopilotDrawer /></MemoryRouter>);
     await userAction(() => user.click(screen.getByRole("button", { name: /operations copilot/i })));
     await userAction(() => user.type(screen.getByRole("textbox"), "Draft a note for booking 1"));
     await userAction(() => user.click(screen.getByRole("button", { name: "Ask Copilot" })));
-    await userAction(() => user.click(screen.getByRole("button", { name: "Reject draft" })));
-    expect(decide).toHaveBeenCalledWith("00000000-0000-0000-0000-000000000001", "reject");
-    expect(await screen.findByText("Decision: rejected.")).toBeVisible();
+    await userAction(() => user.click(screen.getByRole("button", { name: "Withdraw request" })));
+    expect(decide).toHaveBeenCalledWith("00000000-0000-0000-0000-000000000001", "cancel");
+    expect(await screen.findByText("Decision: cancelled.")).toBeVisible();
   });
 
-  it.each(["approve", "reject"] as const)("blocks a new query while recording %s so its result cannot apply to another draft", async (action) => {
-    ask.mockResolvedValue({ text: "Draft ready.", steps: [{ stepNumber: 0, status: "completed", text: "", toolCalls: [], toolResults: [{ toolName: "addBookingInternalNote", output: { kind: "internal-note-approval", approvalId: "00000000-0000-0000-0000-000000000001", bookingId: 1, note: "Acceptance fixture note.", status: "pending", facts: [], sourceIds: [], truncated: false } }] }] });
+  it.each(["submit", "cancel"] as const)("blocks a new query while recording %s so its result cannot apply to another draft", async (action) => {
+    ask.mockResolvedValue({ text: "Draft ready.", steps: [{ stepNumber: 0, status: "completed", text: "", toolCalls: [], toolResults: [{ toolName: "addBookingInternalNote", output: { kind: "internal-note-approval", approvalId: "00000000-0000-0000-0000-000000000001", bookingId: 1, note: "Acceptance fixture note.", status: "draft", facts: [], sourceIds: [], truncated: false } }] }] });
     let finishDecision!: (value: { status: string }) => void;
     decide.mockImplementation(() => new Promise((resolve) => { finishDecision = resolve; }));
     const user = userEvent.setup();
@@ -231,31 +233,31 @@ describe("Operations Copilot drawer", () => {
     await userAction(() => user.click(screen.getByRole("button", { name: /operations copilot/i })));
     await userAction(() => user.type(screen.getByRole("textbox"), "Draft a note for booking 1"));
     await userAction(() => user.click(screen.getByRole("button", { name: "Ask Copilot" })));
-    await userAction(() => user.click(screen.getByRole("button", { name: action === "approve" ? "Approve note" : "Reject draft" })));
+    await userAction(() => user.click(screen.getByRole("button", { name: action === "submit" ? "Submit for approval" : "Withdraw request" })));
     expect(screen.getByRole("button", { name: "Recording decision…" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: action === "approve" ? "Approving…" : "Rejecting…" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: action === "submit" ? "Submitting…" : "Withdrawing…" })).toBeDisabled();
     fireEvent.submit(screen.getByRole("textbox").closest("form")!);
     expect(ask).toHaveBeenCalledOnce();
-    const status = action === "approve" ? "executed" : "rejected";
+    const status = action === "submit" ? "pending" : "cancelled";
     await act(async () => finishDecision({ status }));
-    expect(screen.getByText(`Decision: ${status}.`)).toBeVisible();
+    expect(screen.getByText(status === "pending" ? "Awaiting administrator review" : `Decision: ${status}.`)).toBeVisible();
     expect(screen.getByRole("textbox")).toBeEnabled();
   });
 
   it("does not show approval success when response validation rejects a malformed payload", async () => {
-    ask.mockResolvedValue({ text: "Draft ready.", steps: [{ stepNumber: 0, status: "completed", text: "", toolCalls: [], toolResults: [{ toolName: "addBookingInternalNote", output: { kind: "internal-note-approval", approvalId: "00000000-0000-0000-0000-000000000001", bookingId: 1, note: "Follow up on payment.", status: "pending", facts: [], sourceIds: ["booking:1"], truncated: false } }] }] });
+    ask.mockResolvedValue({ text: "Draft ready.", steps: [{ stepNumber: 0, status: "completed", text: "", toolCalls: [], toolResults: [{ toolName: "addBookingInternalNote", output: { kind: "internal-note-approval", approvalId: "00000000-0000-0000-0000-000000000001", bookingId: 1, note: "Follow up on payment.", status: "draft", facts: [], sourceIds: ["booking:1"], truncated: false } }] }] });
     decide.mockRejectedValue(new Error("The approval service returned an invalid response."));
     const user = userEvent.setup();
     render(<MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}><CopilotDrawer /></MemoryRouter>);
     await userAction(() => user.click(screen.getByRole("button", { name: /operations copilot/i })));
     await userAction(() => user.type(screen.getByRole("textbox"), "Draft a note for booking 1"));
     await userAction(() => user.click(screen.getByRole("button", { name: "Ask Copilot" })));
-    await userAction(() => user.click(screen.getByRole("button", { name: "Approve note" })));
+    await userAction(() => user.click(screen.getByRole("button", { name: "Submit for approval" })));
 
     await waitFor(() => expect(toastError).toHaveBeenCalledWith("The approval service returned an invalid response."));
     expect(toastSuccess).not.toHaveBeenCalled();
     expect(screen.queryByText(/Decision:/)).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Approve note" })).not.toBeDisabled();
+    expect(screen.getByRole("button", { name: "Submit for approval" })).not.toBeDisabled();
   });
 
   it("keeps an old result and questions when the next request fails", async () => {
@@ -283,9 +285,9 @@ describe("Operations Copilot drawer", () => {
   });
 
   it("keeps an older approval attached to its own turn after a later answer", async () => {
-    ask.mockResolvedValueOnce({ text: "Draft ready.", steps: [{ stepNumber: 0, status: "completed", text: "", toolCalls: [], toolResults: [{ toolName: "addBookingInternalNote", output: { kind: "internal-note-approval", approvalId: "00000000-0000-0000-0000-000000000001", bookingId: 1, note: "Synthetic note.", status: "pending", facts: [], sourceIds: [], truncated: false } }] }] })
+    ask.mockResolvedValueOnce({ text: "Draft ready.", steps: [{ stepNumber: 0, status: "completed", text: "", toolCalls: [], toolResults: [{ toolName: "addBookingInternalNote", output: { kind: "internal-note-approval", approvalId: "00000000-0000-0000-0000-000000000001", bookingId: 1, note: "Synthetic note.", status: "draft", facts: [], sourceIds: [], truncated: false } }] }] })
       .mockResolvedValueOnce({ text: "Second read-only answer.", steps: [] });
-    decide.mockResolvedValue({ status: "rejected" });
+    decide.mockResolvedValue({ status: "cancelled" });
     const user = userEvent.setup();
     render(<MemoryRouter><CopilotDrawer /></MemoryRouter>);
     await userAction(() => user.click(screen.getByRole("button", { name: /operations copilot/i })));
@@ -295,10 +297,10 @@ describe("Operations Copilot drawer", () => {
     await userAction(() => user.type(screen.getByRole("textbox"), "Explain the policy"));
     await userAction(() => user.click(screen.getByRole("button", { name: "Ask Copilot" })));
     expect(await screen.findByText("Second read-only answer.")).toBeVisible();
-    await userAction(() => user.click(screen.getByRole("button", { name: "Reject draft" })));
-    expect(decide).toHaveBeenCalledWith("00000000-0000-0000-0000-000000000001", "reject");
+    await userAction(() => user.click(screen.getByRole("button", { name: "Withdraw request" })));
+    expect(decide).toHaveBeenCalledWith("00000000-0000-0000-0000-000000000001", "cancel");
     const turns = screen.getAllByLabelText("Conversation turn");
-    expect(within(turns[0]).getByText("Decision: rejected.")).toBeVisible();
+    expect(within(turns[0]).getByText("Decision: cancelled.")).toBeVisible();
     expect(within(turns[1]).queryByText(/Decision:/)).not.toBeInTheDocument();
   });
 
@@ -412,7 +414,7 @@ describe("Operations Copilot drawer", () => {
           { toolName: "getArrivals", output: { kind: "arrivals", arrivals: [], facts: [], sourceIds: ["arrivals:none"], truncated: true } },
           { toolName: "getBookingMetrics", output: { kind: "booking-metrics", metrics: { totalBookings: 0, totalRevenue: 0, extrasRevenue: 0, paidBookings: 0, unpaidBookings: 0, byStatus: {}, currency: "USD", dateBasis: "created_at", revenueBasis: "totalPrice", includesCancelled: true }, facts: [], sourceIds: ["metrics:month"], truncated: false } },
           { toolName: "getBookingRisks", output: { kind: "booking-risks", risks: [], facts: [], sourceIds: ["risks:none"], truncated: false } },
-          { toolName: "addBookingInternalNote", output: { kind: "internal-note-approval", approvalId: "00000000-0000-0000-0000-000000000699", bookingId: 699, note: "Follow up on payment before check-in.", status: "pending", facts: [], sourceIds: ["booking:699"], truncated: false } },
+          { toolName: "addBookingInternalNote", output: { kind: "internal-note-approval", approvalId: "00000000-0000-0000-0000-000000000699", bookingId: 699, note: "Follow up on payment before check-in.", status: "draft", facts: [], sourceIds: ["booking:699"], truncated: false } },
         ],
       }],
     });
@@ -503,10 +505,10 @@ describe("Operations Copilot drawer", () => {
   });
 
   it.each([
-    { action: "reject" as const, status: "rejected", button: "Reject draft" },
-    { action: "approve" as const, status: "executed", button: "Approve note" },
-  ])("makes $status approval state semantic and visibly disables both actions", async ({ action, status, button }) => {
-    ask.mockResolvedValue({ text: "Draft ready.", steps: [{ stepNumber: 0, status: "completed", text: "", toolCalls: [{ toolName: "addBookingInternalNote", input: { bookingId: 699, note: "[redacted]" } }], toolResults: [{ toolName: "addBookingInternalNote", output: { kind: "internal-note-approval", approvalId: "00000000-0000-0000-0000-000000000699", bookingId: 699, note: "Exact note", status: "pending", facts: [], sourceIds: ["booking:699"], truncated: false } }] }] });
+    { action: "cancel" as const, status: "cancelled", button: "Withdraw request" },
+    { action: "submit" as const, status: "pending", button: "Submit for approval" },
+  ])("keeps submitted or withdrawn requests from being resubmitted", async ({ action, status, button }) => {
+    ask.mockResolvedValue({ text: "Draft ready.", steps: [{ stepNumber: 0, status: "completed", text: "", toolCalls: [{ toolName: "addBookingInternalNote", input: { bookingId: 699, note: "[redacted]" } }], toolResults: [{ toolName: "addBookingInternalNote", output: { kind: "internal-note-approval", approvalId: "00000000-0000-0000-0000-000000000699", bookingId: 699, note: "Exact note", status: "draft", facts: [], sourceIds: ["booking:699"], truncated: false } }] }] });
     decide.mockResolvedValue({ status });
     const user = userEvent.setup();
     render(<MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}><CopilotDrawer /></MemoryRouter>);
@@ -516,14 +518,15 @@ describe("Operations Copilot drawer", () => {
     const decisionButton = await screen.findByRole("button", { name: button });
     await userAction(() => user.click(decisionButton));
 
-    const approve = screen.getByRole("button", { name: "Approve note" });
-    const reject = screen.getByRole("button", { name: "Reject draft" });
     expect(decide).toHaveBeenCalledWith("00000000-0000-0000-0000-000000000699", action);
-    expect(approve).toBeDisabled();
-    expect(reject).toBeDisabled();
-    expect(window.getComputedStyle(approve).cursor).toBe("not-allowed");
-    expect(screen.getByText(status, { selector: "strong" })).toBeVisible();
-    expect(screen.getByRole("status")).toHaveTextContent(`Decision: ${status}.`);
+    expect(screen.queryByRole("button", { name: "Submit for approval" })).not.toBeInTheDocument();
+    if (status === "pending") {
+      expect(screen.getByText("Awaiting administrator review")).toBeVisible();
+      expect(screen.getByRole("button", { name: "Withdraw request" })).toBeEnabled();
+    } else {
+      expect(screen.queryByRole("button", { name: "Withdraw request" })).not.toBeInTheDocument();
+      expect(screen.getByRole("status")).toHaveTextContent("Decision: cancelled.");
+    }
   });
 
   it("stores response feedback once and keeps the long reference in collapsed response details", async () => {

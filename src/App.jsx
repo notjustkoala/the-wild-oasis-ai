@@ -19,6 +19,7 @@ const Login = lazy(() => import("./pages/Login"));
 const PageNotFound = lazy(() => import("./pages/PageNotFound"));
 const Settings = lazy(() => import("./pages/Settings"));
 const Users = lazy(() => import("./pages/Users"));
+const Approvals = lazy(() => import("./pages/Approvals"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -53,6 +54,8 @@ function App() {
                 <Route path="users" element={<Users />} />
                 <Route path="settings" element={<Settings />} />
                 <Route path="account" element={<Account />} />
+                <Route path="approvals" element={<Approvals />} />
+                <Route path="my-requests" element={<Approvals mode="mine" />} />
               </Route>
               <Route path="login" element={<Login />} />
               <Route path="*" element={<PageNotFound />} />

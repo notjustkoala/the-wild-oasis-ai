@@ -202,6 +202,9 @@ describe("operations BFF response validation", () => {
   it.each([
     ["approve" as const, "executed" as const],
     ["reject" as const, "rejected" as const],
+    ["submit" as const, "pending" as const],
+    ["cancel" as const, "cancelled" as const],
+    ["approve" as const, "conflict" as const],
   ])("accepts a valid %s approval decision contract", async (action, status) => {
     const approvalId = "00000000-0000-0000-0000-000000000001";
     const approval = { id: approvalId, bookingId: 12, status, repeated: false };
@@ -210,7 +213,7 @@ describe("operations BFF response validation", () => {
       headers: { "content-type": "application/json" },
     })));
 
-    await expect(decideOperationsApproval(approvalId, action)).resolves.toEqual(approval);
+    await expect(decideOperationsApproval(approvalId, action, action === "reject" ? "Needs correction" : "")).resolves.toEqual(approval);
   });
 
   it.each([

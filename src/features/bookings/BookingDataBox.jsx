@@ -114,6 +114,7 @@ function BookingDataBox({ booking }) {
     totalPrice,
     hasBreakfast,
     observations,
+    internalNote,
     isPaid,
     guests,
     cabins,
@@ -141,6 +142,9 @@ function BookingDataBox({ booking }) {
       </Header>
 
       <Section>
+        <DataItem icon={<HiOutlineChatBubbleBottomCenterText />} label="Internal note">
+          <span style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{internalNote || "No approved internal note."}</span>
+        </DataItem>
         <Guest>
           {!guests ? <p>Guest details unavailable for this account.</p> : <>
           {countryFlag && <Flag src={countryFlag} alt={`Flag of ${country}`} />}

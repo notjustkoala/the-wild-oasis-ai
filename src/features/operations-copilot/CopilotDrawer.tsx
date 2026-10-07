@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import {
   askOperationsCopilot,
   decideOperationsApproval,
+  getApprovalRequests,
   OperationsRequestError,
   type OperationsReceipt,
   type OperationsResponse,
@@ -152,6 +153,34 @@ export default function CopilotDrawer() {
   const restoreLauncherFocus = useRef(false);
   const contentRef = useRef<HTMLDivElement>(null);
   const followLatest = useRef(true);
+  const turnsRef = useRef(turns);
+  turnsRef.current = turns;
+
+  useEffect(() => {
+    if (!open) return;
+    const controller = new AbortController();
+    let polling = false;
+    async function refreshApprovals() {
+      if (polling || !turnsRef.current.some(turn => outputs(turn.result).some(output => output.kind === "internal-note-approval"))) return;
+      polling = true;
+      try {
+        const result = await getApprovalRequests({ scope: "mine", pageSize: 50 }, controller.signal);
+        if (controller.signal.aborted) return;
+        setTurns(previous => previous.map(turn => {
+          const proposal = outputs(turn.result).find(output => output.kind === "internal-note-approval");
+          const saved = proposal ? result.items.find(request => request.id === proposal.approvalId) : undefined;
+          if (!saved || ["submitting", "cancelling"].includes(turn.approvalState ?? "")) return turn;
+          if (["executed", "rejected", "cancelled", "conflict"].includes(turn.approvalState ?? "") && ["draft", "pending"].includes(saved.status)) return turn;
+          return turn.approvalState === saved.status ? turn : { ...turn, approvalState: saved.status };
+        }));
+      } catch { /* Keep last confirmed card state; the requests page exposes retry errors. */ }
+      finally { polling = false; }
+    }
+    void refreshApprovals();
+    const timer = setInterval(() => void refreshApprovals(), 20_000);
+    window.addEventListener("approval-requests-updated", refreshApprovals);
+    return () => { controller.abort(); clearInterval(timer); window.removeEventListener("approval-requests-updated", refreshApprovals); };
+  }, [open, turns.length]);
 
   function updateTurn(id: string, changes: Partial<ConversationTurn> | ((turn: ConversationTurn) => ConversationTurn)) {
     setTurns(previous => previous.map(turn => turn.id !== id ? turn : typeof changes === "function" ? changes(turn) : { ...turn, ...changes }));
@@ -218,17 +247,18 @@ export default function CopilotDrawer() {
       if (activeRequest.current === controller) { activeRequest.current = null; activeTurnId.current = null; setBusy(false); }
     }
   }
-  async function decide(id: string, action: "approve" | "reject") {
+  async function decide(id: string, action: "submit" | "cancel") {
     const turn = turns.find(item => item.id === id);
     const proposal = outputs(turn?.result ?? null).find(output => output.kind === "internal-note-approval");
-    if (!turn || !proposal || turn.approvalState || busy || decisionPending) return;
-    setDecisionId(id); updateTurn(id, { approvalState: action === "approve" ? "approving" : "rejecting" });
+    if (!turn || !proposal || ["executed", "rejected", "cancelled", "conflict"].includes(turn.approvalState ?? "") || busy || decisionPending) return;
+    const previousState = turn.approvalState;
+    setDecisionId(id); updateTurn(id, { approvalState: action === "submit" ? "submitting" : "cancelling" });
     try {
       const response = await decideOperationsApproval(proposal.approvalId, action);
       updateTurn(id, { approvalState: response.status });
-      toast.success(action === "approve" ? "Internal note added." : "Draft rejected; no booking field changed.");
+      toast.success(action === "submit" ? "Submitted for administrator review." : "Request withdrawn; no booking field changed.");
     } catch (error) {
-      updateTurn(id, { approvalState: null }); toast.error(error instanceof Error ? error.message : "Approval decision failed.");
+      updateTurn(id, { approvalState: previousState }); toast.error(error instanceof Error ? error.message : "Approval decision failed.");
     } finally { setDecisionId(null); }
   }
   return <>
