@@ -14,6 +14,15 @@ const Button = styled.button`padding:.8rem 1.4rem;border:1px solid var(--color-g
 const Primary = styled(Button)`background:var(--color-brand-600);color:var(--color-brand-50);border-color:var(--color-brand-600);`;
 const Card = styled.article`border:1px solid var(--color-grey-200);border-radius:.8rem;background:var(--color-grey-0);padding:2rem;display:grid;gap:1.2rem;min-width:0;header{display:flex;gap:1rem;flex-wrap:wrap;justify-content:space-between;}summary{cursor:pointer;color:var(--color-brand-600);}p{overflow-wrap:anywhere;}details>div{margin-top:1.2rem;}textarea{width:100%;padding:1rem;border:1px solid var(--color-grey-300);border-radius:.6rem;background:var(--color-grey-0);resize:vertical;color:inherit;} @media(max-width:40rem){padding:1.2rem;}`;
 const Notes = styled.div`display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1.2rem;section{padding:1.2rem;border:1px solid var(--color-grey-200);border-radius:.6rem;}p{white-space:pre-wrap;margin-top:.8rem;}@media(max-width:50rem){grid-template-columns:1fr;}`;
+const History = styled.ol`
+  margin: 1.6rem 0 0;
+  padding: 0;
+  list-style-type: decimal;
+  list-style-position: inside;
+  display: grid;
+  gap: 0.6rem;
+  overflow-wrap: anywhere;
+`;
 const Actions = styled.div`display:flex;align-items:center;gap:1rem;flex-wrap:wrap;margin-top:1rem;`;
 const Notice = styled.p`padding:1.2rem;border-radius:.6rem;background:var(--color-grey-100);`;
 const Status = styled.span`font-weight:600;padding:.3rem .8rem;border:1px solid var(--color-grey-300);border-radius:2rem;font-size:1.3rem;`;
@@ -51,7 +60,7 @@ function RequestCard({ request, canReview }: { request:ApprovalRequest;canReview
       <Notes><section><strong>Existing internal note</strong><p>{request.currentNote||"No internal note."}</p></section><section><strong>Proposed replacement</strong><p>{request.note}</p></section></Notes>
       {request.status==="pending"&&request.currentNote!==request.baseNote?<Notice role="alert">The internal note changed after this draft was created. Approval will be blocked to protect the newer note.</Notice>:null}
       <p>Request reference: <code>{request.id}</code></p>
-      <ol aria-label="Request history">{request.events.map((event,index)=><li key={`${event.at}-${index}`}>{eventLabels[event.event]??event.event} · {date(event.at)}</li>)}</ol>
+      <History aria-label="Request history">{request.events.map((event,index)=><li key={`${event.at}-${index}`}>{eventLabels[event.event]??event.event} · {date(event.at)}</li>)}</History>
     </div></details>
     {canReview&&request.status==="pending"?<div>
       <label><input type="checkbox" checked={checked} disabled={Boolean(saving)} onChange={e=>setChecked(e.target.checked)}/> I reviewed the proposed note. Approval replaces the existing internal note.</label>

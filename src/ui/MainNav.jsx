@@ -77,7 +77,7 @@ export default function MainNav() {
         {role === "admin" || role === "staff" ? <li>
           <StyledNavLink to={isAdmin ? "./approvals" : "./my-requests"}>
             <HiOutlineClipboardDocumentCheck />
-            <span>{isAdmin ? "Approvals" : "My requests"}</span>
+            <span>{isAdmin ? "Approvals" : "Request"}</span>
             {count ? <Badge role="status" aria-label={`${count} ${!isAdmin && data?.unreadCount ? "unread results" : "pending requests"}`}>{count}</Badge> : null}
           </StyledNavLink>
         </li> : null}

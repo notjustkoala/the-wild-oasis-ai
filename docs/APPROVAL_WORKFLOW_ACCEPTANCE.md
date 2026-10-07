@@ -8,7 +8,7 @@
 |---|---|
 | 员工窗口A | 普通浏览器打开[员工端](https://the-wild-oasis-ai.vercel.app)，登录现有staff账号 |
 | 管理员窗口B | 另一个浏览器或无痕窗口打开同一网站，登录现有admin账号；不要在同一浏览器的两个普通标签页切换账号 |
-| 页面版本 | 两个窗口均Ctrl+F5；管理员侧栏应有Approvals，员工侧栏应有My requests |
+| 页面版本 | 两个窗口均Ctrl+F5；管理员侧栏应有Approvals，员工侧栏应有Request；点击Request进入My requests页面 |
 | 演示订单 | 使用订单518，先打开[订单详情](https://the-wild-oasis-ai.vercel.app/bookings/518)，复制保存Internal note原文，并记下日期、房型、人数、总价、付款状态和订单状态 |
 | 待办基线 | 管理员打开[Approvals](https://the-wild-oasis-ai.vercel.app/approvals)，Status选Pending review，记录当前数量；只处理本轮验收文字对应的申请 |
 
@@ -18,7 +18,7 @@
 
 ## P1 — 角色与入口
 
-1. 员工窗口A：侧栏打开My requests，正常显示自己的申请或空态。
+1. 员工窗口A：侧栏打开Request，进入My requests，正常显示自己的申请或空态。
 2. 员工在地址栏直接输入`https://the-wild-oasis-ai.vercel.app/approvals`。
 3. 管理员窗口B：侧栏打开Approvals，再点页面顶部My requests链接。
 

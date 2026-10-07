@@ -84,6 +84,22 @@ const Action = styled.button<{ $secondary?: boolean }>`
   }
 `;
 
+const RequestLink = styled(Link)`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-grey-300);
+  border-radius: var(--border-radius-sm);
+  padding: 0.8rem 1.2rem;
+  background: var(--color-grey-0);
+  color: var(--color-brand-700);
+  font-weight: 600;
+  text-decoration: none;
+
+  &:hover { background: var(--color-grey-50); border-color: var(--color-brand-600); }
+  &:focus-visible { outline: 2px solid var(--color-brand-600); outline-offset: 2px; }
+`;
+
 const EmptyBookings = styled.p`
   border-radius: var(--border-radius-sm);
   padding: 1rem 1.2rem;
@@ -170,7 +186,7 @@ export default function StructuredResults({
             {!terminal ? <Action type="button" $secondary onClick={() => onDecision("cancel")} disabled={streaming || decisionsDisabled || ["submitting", "cancelling"].includes(decision)}>
               {approvalState === "cancelling" ? "Withdrawing…" : "Withdraw request"}
             </Action> : null}
-            <Link to="/my-requests" onClick={onContinue}>View my requests</Link>
+            <RequestLink to="/my-requests" onClick={onContinue}>View my requests</RequestLink>
           </Actions>
           {terminal ? <p role="status">Decision: {decision}.</p> : <p>Review the exact note before submitting. Only an administrator can approve and save it.</p>}
         </Approval>
