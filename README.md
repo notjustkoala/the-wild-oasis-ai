@@ -58,8 +58,8 @@ The interview path is Guest complex request → live recommendation → editable
 reservation prefill; Staff special request → Risk Briefing → correction; then
 Copilot business question → KPI/chart/order evidence → submit a draft → administrator review.
 It closes with an unauthorized request and tracing/eval evidence. Follow the
-[timed demo script](docs/portfolio/DEMO_SCRIPT.md); the real backup recording and
-three human-timed rehearsals are still pending.
+[timed demo script](docs/portfolio/DEMO_SCRIPT.md). A captioned automated backup
+recording is available; three human-timed rehearsals are still pending.
 
 Demo identities are deployment-time placeholders, never credentials in Git:
 `DEMO_GUEST` is a normal customer; `DEMO_ADMIN` has the existing admin role and
