@@ -1,4 +1,5 @@
 import type { OperationsReceipt, OperationsResponse, OperationsStep, OperationsToolOutput } from "./apiOperationsCopilot";
+import { publicOperationsStreamFailure } from "./operationsStreamError";
 
 // AI SDK UI message SSE protocol. Never render provider input fragments or
 // unvalidated tool outputs, and never treat an unexpected EOF as success.
@@ -119,6 +120,7 @@ export async function readOperationsStream(
         if (step || textIds.size || [...calls.values()].some((entry) => entry.call.status === "running") || event.finishReason === "error") throw new Error("Incomplete response.");
         finished = true; break;
       case "error":
+        throw publicOperationsStreamFailure(event.errorText, receipt?.traceId) ?? new Error("Interrupted response.");
       case "abort": throw new Error("Interrupted response.");
       // SDK start/metadata, reasoning, sources and input deltas don't contain
       // business results. Ignore these instead of showing raw provider data.

@@ -1,5 +1,6 @@
 import supabase from "./supabase";
 import { readOperationsStream } from "./operationsStream";
+import { OperationsStreamFailure } from "./operationsStreamError";
 
 type OperationsToolOutputBase = {
   facts: string[];
@@ -319,10 +320,15 @@ export async function askOperationsCopilot(text: string, signal?: AbortSignal, o
   const traceId = response.headers?.get("X-AI-Trace-Id");
   const receipt = traceId && /^[0-9a-f-]{36}$/i.test(traceId) ? { traceId, token: response.headers.get("X-AI-Feedback-Token") } : undefined;
   if (response.ok && response.headers.get("Content-Type")?.includes("text/event-stream")) {
+    let hasResults = false;
     try {
-      return await readOperationsStream(response, isOperationsToolOutput, onUpdate, signal, receipt);
+      return await readOperationsStream(response, isOperationsToolOutput, result => {
+        hasResults ||= Boolean(result.text) || result.steps.some(step => step.toolResults.length > 0);
+        onUpdate?.(result);
+      }, signal, receipt);
     } catch (error) {
       if (signal?.aborted) throw error;
+      if (error instanceof OperationsStreamFailure) throw new OperationsRequestError(error.message + (hasResults ? " Received results are kept and may be incomplete." : ""), receipt);
       throw new OperationsRequestError("The response was interrupted. Received results are kept; you can ask again.", receipt);
     }
   }

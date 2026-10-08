@@ -107,6 +107,32 @@ describe("Operations UI message stream", () => {
     expect(update.mock.lastCall![0].steps[0].toolResults).toEqual([]);
   });
 
+  it.each([
+    "The model service could not be reached. Please try again.",
+    "The model service took too long to respond. Please try again.",
+    "The model service is rate limited. Please wait and try again.",
+    "The model service access is unavailable. Please contact an administrator.",
+  ])("preserves a recognized server failure without falsely blaming the browser: %s", async message => {
+    const stream=fixture();vi.stubGlobal("fetch",vi.fn().mockResolvedValue(stream.response));
+    const answer=askOperationsCopilot("Show arrivals");
+    const rejection=expect(answer).rejects.toMatchObject({message,receipt:{traceId:"00000000-0000-4000-8000-000000000005"}});
+    stream.write(sse({type:"error",errorText:message+" Reference: 00000000-0000-4000-8000-000000000005"}));await rejection;
+  });
+  it("keeps completed cards when a later model connection fails",async()=>{
+    const stream=fixture();vi.stubGlobal("fetch",vi.fn().mockResolvedValue(stream.response));const update=vi.fn();
+    const answer=askOperationsCopilot("Show arrivals",undefined,update);
+    const rejection=expect(answer).rejects.toThrow("The model service could not be reached. Please try again. Received results are kept");
+    stream.write(sse({type:"start-step"},{type:"tool-input-available",toolCallId:"arrivals",toolName:"getArrivals",input:{}},{type:"tool-output-available",toolCallId:"arrivals",output},{type:"finish-step"},{type:"error",errorText:"The model service could not be reached. Please try again. Reference: 00000000-0000-4000-8000-000000000005"}));
+    await rejection;expect(update.mock.lastCall![0].steps[0].toolResults[0].output).toEqual(output);
+  });
+  it.each([
+    "The model service could not be reached. Please try again. PRIVATE KEY",
+    "The model service could not be reached. Please try again. Reference: 00000000-0000-4000-8000-000000000099",
+  ])("does not display untrusted details or mismatched references",async errorText=>{
+    const stream=fixture();vi.stubGlobal("fetch",vi.fn().mockResolvedValue(stream.response));const answer=askOperationsCopilot("Show arrivals");
+    const rejection=expect(answer).rejects.toThrow("The response was interrupted");stream.write(sse({type:"error",errorText}));await rejection;
+  });
+
   it("keeps successful parallel tools completed when another tool fails", async () => {
     const stream = fixture();
     const answer = readOperationsStream(stream.response, isOperationsToolOutput);
