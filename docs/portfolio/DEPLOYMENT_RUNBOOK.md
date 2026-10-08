@@ -2,7 +2,7 @@
 
 ## 当前发布状态
 
-截至 2026-09-26，两个源码仓库已发布，隔离 Supabase Demo Project 已完成迁移、seed、Storage 图片与 rollback-only SQL 验证。Guest/BFF 与 Staff/Admin 已统一发布为同一 Vercel Hobby 账户下的两个独立 Project；Staff 三项浏览器安全变量和 Guest `AI_ADMIN_ORIGIN`、Google 模型凭据已写入 Production。Google OAuth 登录、Profile 与真实 `gemini-3.6-flash` 政策检索已验证。Guest Project 已连接 GitHub 新仓库并部署 `sin1` Functions 区域和限流存储超时修复；生产请求返回 `200`，`X-Vercel-Id` 显示 Function 在 `sin1` 执行，对应 Supabase run 为 `completed` 且无 error/tool error。Staff 演示身份、Cron 启用态和完整 AI 人工路径仍待完成。
+截至 2026-10-08，两个原始生产域名均可用，仓库 production smoke 均通过。顾客登录、选房/政策/预填、多轮需求、员工只读 Copilot、管理员 Briefing 及跨角色内部备注审批已验证；用户已确认核心验收通过，最近员工连接超时修复也已复验通过。当前三个生成工作流均为百炼 `qwen3.7-plus` 非思考模式，政策 embedding 为 `text-embedding-v4`、768维，7篇政策/16块重建并激活，24条真实检索/RLS场景通过。Google OAuth 仍用于顾客登录，生成与向量不再依赖 Google。Cron 启用态和真人演示交付分别登记，不以核心验收替代。
 
 | Surface | 建议平台 | 目标域名角色 | 实际 URL |
 | --- | --- | --- | --- |
@@ -24,7 +24,7 @@
 
 - Supabase：`SUPABASE_URL`、`SUPABASE_PUBLISHABLE_KEY`、`SUPABASE_SECRET_KEY`
 - Auth：`NEXTAUTH_SECRET`、OAuth provider 变量、`AUTH_TRUST_HOST`
-- AI：`AI_PROVIDER` 和对应 provider key；可选模型覆盖
+- AI：`AI_PROVIDER=dashscope`、`DASHSCOPE_API_KEY`（server-only）、北京 workspace 的 `DASHSCOPE_BASE_URL`；三个生成模型均 `qwen3.7-plus`，`AI_POLICY_PROVIDER=dashscope`、`text-embedding-v4` / 768维。生产连接超时备用仅限同北京官方入口，不能用于切换 embedding 模型或维度。
 - Region：Guest `vercel.json` 将 Functions 主区域固定为 `sin1`，靠近位于新加坡 `ap-southeast-1` 的 Demo Project；不要把访问者入口区域与函数执行区域混为一谈
 - 双端绑定：`AI_ADMIN_ORIGIN` 必须是 Staff 的精确 HTTPS origin；需要多个明确部署时用逗号分隔，不能用 `*`
 - Observability：稳定的 `AI_OBSERVABILITY_SECRET`
@@ -44,7 +44,7 @@
 7. 将 Guest URL 写入 Staff 的 `VITE_AI_BFF_URL` 后发布 Staff；取得 Staff URL 后，将其写入 BFF 的 `AI_ADMIN_ORIGIN` 并重新部署 Guest。
 8. 用平台日志确认没有 secret 输出，用构建产物搜索确认客户端不存在 server secret/key 的值或变量名误用。
 9. 创建最小权限演示身份，运行生产 smoke 和完整五分钟脚本。
-10. 先以 `DEMO_RESET_ENABLED=false` 验证 route 失败关闭；rollback-only SQL 已通过后，临时改为 `true` 并重新部署，手动执行一次带 Bearer 的受保护调用并复核非 demo 行。只有本次验证成功才保持开关为 `true`、启用 Vercel Cron，并在日志确认一次实际 production 调用；任何失败都立即改回 `false` 并重新部署。
+10. 先以 `DEMO_RESET_ENABLED=false` 验证 route 失败关闭；rollback-only SQL 已通过后，必须先核对现有演示关联审批/报告并取得清除授权，再临时改为`true`重新部署、手动执行一次带Bearer的受保护调用并复核非demo行。只有验证成功才保持`true`启用Vercel Cron，并等待实际定时调用日志；任何失败立即回退关闭。需要保留演示历史时维持关闭，不为填满验收表清除现有记录。
 
 ## 演示账号
 
@@ -53,8 +53,8 @@
 | 标识 | 权限 | 用途 | 创建/保管 |
 | --- | --- | --- | --- |
 | `DEMO_GUEST` | 普通顾客 | 预订预填、私有预订页面 | 使用专用 Google OAuth 测试账号；首次登录会按邮箱匹配或创建 `guests` 行，不创建 Supabase Auth 密码账号 |
-| `DEMO_ADMIN` | `app_metadata.role=admin` | 仅用于 admin-only Risk Briefing 演示 | 独立账号；仅受信管理员写 `app_metadata`，不与日常账号共用 |
-| `DEMO_STAFF` | `app_metadata.role=staff` | Copilot 只读、草稿审批/拒绝 | 只能由受信管理员写 `app_metadata`；不能访问 admin-only Briefing |
+| `DEMO_ADMIN` | `app_metadata.role=admin` | admin-only Risk Briefing、审核其他员工提交的备注 | 独立账号；仅受信管理员写 `app_metadata`，不与日常账号共用 |
+| `DEMO_STAFF` | `app_metadata.role=staff` | Copilot 只读、草稿提交/撤回、申请历史与通知 | 只能由受信管理员写 `app_metadata`；不能访问 admin-only Briefing 或批准申请 |
 | `DEMO_DENIED` | 无 staff/admin role 或未登录 | 越权拒绝演示 | 不得通过 `user_metadata` 模拟角色 |
 
 不要创建共享 service-role 登录，不要把密码写进 README/录屏脚本。公开演示环境应定期轮换密码并限制回调 URL。
@@ -120,9 +120,9 @@ Smoke 只证明 HTTPS 首页可达和返回预期 app marker，不证明登录�
 - [x] Staff 与 BFF exact-origin CORS 配置正确；真实 Staff origin 预检返回 `204`。
 - [x] Staff 浏览器 bundle 只包含预期公开配置；没有注入 server secret、provider key 或密码。
 - [x] Supabase grants、RLS 与受控审批迁移已应用到指定 Demo Project；演示身份角色仍按下一项单独验收。
-- [ ] `DEMO_ADMIN` 仅用于 Briefing；`DEMO_STAFF` 用于 Copilot；拒绝账号无法访问员工 AI。
+- [x] 真实角色/权限验证：admin-only Briefing、staff只读与提交、另一管理员审核、普通身份拒绝；临时验证账号已清理，不提供公共账号凭据。
 - [x] Reset migration/seed/rollback-only SQL 已在隔离 Demo Project 验证；Cron flag 仍保持关闭，部署后才按步骤临时启用。
 - [ ] Vercel production Cron 日志显示受保护 route 成功；重复/重叠安全边界已复核。
-- [ ] 两端 `check`、`docs:check` 与真实生产 smoke 通过（本地检查、Guest production smoke、Staff 浏览器生产验证均通过；Staff 仓库 smoke 本轮受终端 TLS 阻塞）。
+- [x] 两端完整 `check` 与真实生产 smoke 通过；2026-10-08 smoke 经当前本地代理执行，未修改系统代理或生产配置。Markdown检查在本次文档最终修订后另行执行。
 - [x] 两个独立 GitHub origin 已发布到 `main`，跨仓库链接已切换到新仓库固定路径并通过 Markdown 检查。
 - [ ] 三次五分钟演练、2–3 分钟备用录屏和陌生读者验证完成。

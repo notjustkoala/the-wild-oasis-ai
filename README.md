@@ -33,8 +33,10 @@ are tracked in the [production runbook](docs/portfolio/DEPLOYMENT_RUNBOOK.md).
 The Staff browser contains only a publishable Supabase key and calls the BFF
 with the current employee JWT. The BFF revalidates `app_metadata.role`, applies
 exact-origin CORS, invokes bounded tools, and stores privacy-minimized telemetry.
-The only write-capable Copilot action drafts an internal note and pauses for an
-employee to approve or reject it.
+The only write-capable Copilot action drafts an internal note. The employee
+reviews and submits it; a different administrator approves or rejects it.
+The **Request** sidebar opens the employee's applications and the **Approvals**
+sidebar opens the administrator inbox. Execution only replaces `internalNote`.
 
 ## Engineering choices
 
@@ -54,7 +56,7 @@ employee to approve or reject it.
 
 The interview path is Guest complex request → live recommendation → editable
 reservation prefill; Staff special request → Risk Briefing → correction; then
-Copilot business question → KPI/chart/order evidence → reject or approve a note.
+Copilot business question → KPI/chart/order evidence → submit a draft → administrator review.
 It closes with an unauthorized request and tracing/eval evidence. Follow the
 [timed demo script](docs/portfolio/DEMO_SCRIPT.md); the real backup recording and
 three human-timed rehearsals are still pending.
@@ -62,7 +64,7 @@ three human-timed rehearsals are still pending.
 Demo identities are deployment-time placeholders, never credentials in Git:
 `DEMO_GUEST` is a normal customer; `DEMO_ADMIN` has the existing admin role and
 is used only for the admin-only Risk Briefing; `DEMO_STAFF` has
-`app_metadata.role=staff` for Copilot read/approval flows; and `DEMO_DENIED` has
+`app_metadata.role=staff` for Copilot reads and draft submission; and `DEMO_DENIED` has
 no employee role or is logged out. Creation, rotation and reset rules are in the
 [deployment runbook](docs/portfolio/DEPLOYMENT_RUNBOOK.md).
 
@@ -118,17 +120,19 @@ separately as `extrasRevenue` and is not added again. Each result also exposes
 compact expandable `sourceIds` evidence.
 
 The sole write action drafts an internal booking note. The drawer shows the
-exact booking and note text and requires an explicit employee approval or
-rejection. Rejected drafts are not retried, and the server's idempotent audit
-transaction can update only the staff-only internal note field. Set
+exact replacement text. The employee submits it for review; another administrator
+approves or rejects the submitted request. Employees may withdraw unreviewed
+requests. A stale note snapshot produces a conflict and no write. The idempotent
+audit transaction can update only the internal note field. Set
 `AI_ADMIN_ORIGIN` on the customer server for a deployed admin origin; local
 development permits the Vite origins described above.
 
 For the approval-chain acceptance check, send one explicit booking command in a
 single turn, for example: `Draft an internal note for booking 123: Follow up on
-payment`. Verify that the drawer shows the exact booking and note, reject once
-to confirm no booking field changes, then repeat and approve to confirm only
-`bookings.internalNote` changes.
+payment`. Verify the draft, submit it, switch to another administrator and review
+it in Approvals. The employee follows the result in Request and the saved note
+on the booking detail page. See the [complete approval acceptance guide](docs/APPROVAL_WORKFLOW_ACCEPTANCE.md)
+for rejection, withdrawal, conflict and repeat-execution checks.
 
 Feature 03 is applied to the dedicated Dev Supabase project; the original
 project and database were not modified. The customer worktree's append-only
@@ -159,24 +163,27 @@ remote database.
 
 `docs:check` validates local Markdown links without network access.
 `smoke:production` rejects missing, local, private and placeholder URLs. Guest
-production smoke passed; the Staff script's latest real-URL attempt was blocked
-by the local terminal TLS path, while browser verification confirmed HTTP 200,
-SPA fallback and the expected security headers. The versioned lint, test, build, bundle, and Lighthouse baseline for both
+and Staff repository production smoke both passed on 2026-10-08 through the
+current local proxy. Browser verification also covered HTTP 200, SPA fallback
+and expected security headers. The versioned lint, test, build, bundle, and Lighthouse baseline for both
 applications is recorded in [docs/quality-baseline.md](docs/quality-baseline.md).
 
 ## Limitations and future work
 
-- Both public URLs are verified, but there is no distributable Staff demo
-  account, backup video, three timed rehearsals or independent-reader acceptance yet.
+- Both public URLs are verified. Account credentials are not distributed.
+  The [captioned automated backup recording](docs/portfolio/assets/video/README.md)
+  uses synthetic HTTP/auth data; three human-timed rehearsals and independent-reader acceptance remain pending.
 - The saved screenshots are Playwright HTTP fixtures, not proof of a model,
   database or production deployment.
 - A fixed-provenance, transaction-locked demo reset RPC, migration and baseline
   have been verified in the isolated Demo Project; the daily Cron remains
   default-disabled until its protected production call is manually accepted.
-- Live-model cost is unknown because no dated, sourced price file was provided;
+- [Current DashScope evaluation and list-price cost](docs/portfolio/CURRENT_MODEL_EVALUATION.md)
+  use measured tokens and dated official CNY pricing. Historical Gemini cost remains unknown;
   no growth, conversion, revenue or uptime claim is made.
-- Future work includes platform WAF/distributed throttling, a privacy-reviewed
-  2–3 minute recording and human validation of the five-minute narrative.
+- Future work includes persistent cross-device chat memory and human validation
+  of the five-minute narrative. Helpful/Not helpful stores signed feedback;
+  automatic learning is deliberately deferred.
 
 ## Feature05 validation reference
 
@@ -201,6 +208,7 @@ Set only `VITE_AI_BFF_URL` in this frontend; configure the matching exact
 `VITE_` variable. Browser CORS must allow the existing bearer token and expose
 the AI trace/feedback headers.
 
-The shared [progress record](docs/FEATURE05_PROGRESS.md) distinguishes offline,
-mock HTTP, live model and real database evidence. Human review of the four
-screens and trace diagnostics remains required before formal Feature05 closure.
+The historical [Feature05 record](docs/FEATURE05_PROGRESS.md) distinguishes offline,
+mock HTTP, live model and real database evidence. Its original human checks passed;
+the interrupted historical review is not claimed as finished. Current delivery
+and remaining human work are reconciled in the [delivery closeout](docs/portfolio/DELIVERY_CLOSEOUT.md).

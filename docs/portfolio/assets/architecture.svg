@@ -18,7 +18,7 @@
 
   <rect class="card" x="60" y="410" width="250" height="160" rx="16"/>
   <text class="head" x="85" y="445">Staff Operations</text>
-  <text class="body" x="85" y="475">Risk Briefing + correction</text><text class="body" x="85" y="498">KPI · charts · booking cards</text><text class="body" x="85" y="521">Draft → approve / reject</text><text class="small" x="85" y="548">Supabase JWT + exact-origin CORS</text>
+  <text class="body" x="85" y="475">Risk Briefing + correction</text><text class="body" x="85" y="498">KPI · charts · booking cards</text><text class="body" x="85" y="521">Draft → submit → admin review</text><text class="small" x="85" y="548">Supabase JWT + exact-origin CORS</text>
 
   <rect class="trust" x="400" y="125" width="420" height="485" rx="22"/>
   <text class="head" x="430" y="162">Trusted server boundary — Next.js BFF</text>

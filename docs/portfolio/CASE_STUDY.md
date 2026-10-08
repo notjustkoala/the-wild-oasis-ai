@@ -12,7 +12,7 @@ Wild Oasis AI Hospitality Platform 把顾客选房、政策问答和预订预填
 
 - 顾客用自然语言描述复杂需求，Concierge 调用实时库存与政策工具，返回可解释的推荐卡；“采用方案”只预填，仍由用户确认预订。
 - 员工从原始特殊留言旁查看风险 Briefing，并可纠错反馈；AI 失败不阻断入住、退房或订单操作。
-- 经营 Copilot 把自然语言问题映射为 KPI、图表和订单卡。唯一写动作只是内部备注草稿，必须由员工明确批准或拒绝。
+- 经营 Copilot 把自然语言问题映射为 KPI、图表和订单卡。内部备注先生成草稿，由员工提交，另一位管理员批准或拒绝；执行只替换内部备注，带原备注冲突校验、幂等审计和持久通知。
 - 所有 AI 入口使用类型化工具、服务端鉴权、限流、超时、受控 telemetry 和降级路径。
 
 ## 双端产品
@@ -26,7 +26,7 @@ Wild Oasis AI Hospitality Platform 把顾客选房、政策问答和预订预填
 跨仓库链接指向两个独立 GitHub origin 的固定 `main` 分支；Feature06 已完成
 新仓库首次发布并通过 Markdown 链接检查。应用部署 URL 仍必须以真实生产验证为准。
 
-当前仓库没有已核验的公开部署 URL。作品集不能把 `guest.example` / `staff.example` 或本地地址写成线上链接；真实地址发布后按 [部署 Runbook](DEPLOYMENT_RUNBOOK.md) 登记并执行 smoke。
+顾客端已部署到 [Guest Production](https://the-wild-oasis-website-ai.vercel.app)，员工端已部署到 [Staff Production](https://the-wild-oasis-ai.vercel.app)。两端仓库 production smoke 已通过；核心人工验收与管理员审批全流程已通过。Smoke、真实模型、数据库权限和人工结果分别登记在 [部署 Runbook](DEPLOYMENT_RUNBOOK.md)。
 
 ## 架构
 
@@ -40,7 +40,7 @@ flowchart LR
   A -->|bounded reads| DB[(Supabase + RLS)]
   A -->|redacted context| M[Model provider]
   A --> O[(ai_runs / feedback)]
-  S -->|approve or reject| P[Idempotent note approval]
+  S -->|staff submits / another admin reviews| P[Idempotent note approval]
   P -->|allow-listed mutation| DB
 ```
 
@@ -74,7 +74,7 @@ Telemetry 保存 trace UUID、受控状态/错误码、耗时、token 数、工�
 - 真实模型首批 10 个固定场景通过 8 个，P50 7.807 秒、P95 20.264 秒；两个失败在后续独立单场补验中分别通过，因此只能表述为“10 个不同固定场景分批取得通过”。
 - 两端各 5 个浏览器 fixture 场景覆盖成功、空结果、超时、拒绝与恢复路径。
 - 真实 HTTP 拒绝覆盖 401/403/400；真实开发数据库并发限流探针在 5 个请求中允许 2 个、拒绝 3 个，并确认 0 个测试 bucket 残留。
-- 没有经核验的模型价格文件，单次成本保持 unknown；没有用户增长或转化数据。
+- 当前百炼独立10项固定流式评测通过10/10，P95总耗时13.677秒、首段文字4.134秒，平均生成原价估算约¥0.010781/场景；环境、失败历史、用量与价格来源见[当前模型报告](CURRENT_MODEL_EVALUATION.md)。历史Gemini成本保持unknown；没有用户增长或转化数据。
 
 每个数字的来源、分母和限制都列在 [AI Eval Report](AI_EVAL_REPORT.md)。
 
@@ -82,7 +82,7 @@ Telemetry 保存 trace UUID、受控状态/错误码、耗时、token 数、工�
 
 1. 顾客提出含日期、人数、预算与偏好的复杂需求，查看实时推荐并预填预订。
 2. 使用专用 `DEMO_ADMIN` 查看 admin-only 风险 Briefing，对 AI 标签作人工纠错。
-3. 切换到最小权限 `DEMO_STAFF` 向 Copilot 询问经营问题，查看 KPI/图表/订单卡，并拒绝或确认内部备注草稿。
+3. 切换到最小权限 `DEMO_STAFF` 向 Copilot 询问经营问题，查看 KPI/图表/订单卡并提交内部备注草稿；再由另一位 `DEMO_ADMIN` 在 Approvals 审核。员工在 Request 查看结果，订单详情展示保存的内部备注。
 4. 展示一次越权拒绝以及 Eval/Tracing 报告，说明项目不只准备成功路径。
 
 完整话术、计时点、失败切换和录屏清单见 [Demo Script](DEMO_SCRIPT.md)。
@@ -106,10 +106,10 @@ npm run docs:check
 
 ## 限制与下一步
 
-- 尚无核验后的公开部署 URL、公开演示账号、生产 HTTPS smoke 或真实备用录屏。
+- 双端公开 HTTPS 页面及核心人工验收已完成；不会公开账号凭据。真人计时演练与陌生读者复述仍需真实执行。
 - 进程内或数据库限流不等于全球边缘防护；公网部署仍应配置平台 WAF/持久限流策略。
 - Live 答案检查使用确定性启发式，不是语义裁判或用户满意度调查。
-- 固定 provenance、私有 baseline、单事务 service-only RPC、advisory lock 与默认关闭 Cron 已在本地实现；尚未应用/验证于远端 Demo Project，因此不宣称自动恢复已激活。
+- 固定 provenance、私有 baseline、单事务 service-only RPC、advisory lock 与默认关闭 Cron 已部署，远端 rollback-only SQL 已通过；自动恢复启用态另行验收，不能以实现或回滚测试代替实际定时恢复证据。
 - 需要一名不了解项目的人完成 README 阅读、演示操作和架构追问；其复述结果应人工登记，不能由开发者自证。
 
 ## 我的前端工程重点
